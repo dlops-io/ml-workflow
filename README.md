@@ -309,5 +309,5 @@ In this section we will simple pipelines and run it on Vertex AI
 #### Run Simple Pipelines
 
 * Sample Pipeline 1: Run `python cli.py --simple1`
-<img src="images/vertex-ai-simeple-pipeline-1.png"  width="400">
+<img src="images/vertex-ai-simeple-pipeline-1.png"  width="500">
 <br>
