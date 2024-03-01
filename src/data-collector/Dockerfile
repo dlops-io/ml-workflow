@@ -5,6 +5,7 @@ ARG DEBIAN_PACKAGES="build-essential git curl wget unzip gzip"
 
 # Prevent apt from showing prompts
 ENV DEBIAN_FRONTEND=noninteractive
+#ENV CLOUDSDK_PYTHON=3.9
 
 # Python wants UTF-8 locale
 ENV LANG=C.UTF-8
@@ -23,15 +24,7 @@ RUN set -ex; \
     apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends $DEBIAN_PACKAGES && \
-    apt-get install -y --no-install-recommends software-properties-common apt-transport-https ca-certificates gnupg2 gnupg-agent curl openssh-client && \
-    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
-    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - && \
-    echo "deb http://packages.cloud.google.com/apt gcsfuse-bionic main" > /etc/apt/sources.list.d/gcsfuse.list && \ 
-    apt-get update && \
-    apt-get install -y --no-install-recommends google-cloud-sdk jq && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
+    apt-get install -y --no-install-recommends apt-transport-https ca-certificates gnupg curl && \
     pip install --no-cache-dir --upgrade pip && \
     pip install pipenv  && \
     useradd -ms /bin/bash app -d /home/app -u 1000 -p "$(openssl passwd -1 Passw0rd)" && \
@@ -39,6 +32,9 @@ RUN set -ex; \
     mkdir -p /persistent && \
     chown app:app /persistent && \
     chown app:app /app
+
+# Install Google Cloud SDK
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && apt-get update -y && apt-get install google-cloud-sdk -y
 
 # Switch to the new user
 USER app
