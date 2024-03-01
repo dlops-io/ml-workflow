@@ -10,7 +10,7 @@ pandas = "*"
 difpy = "*"
 dask = "*"
 google-cloud-storage = "*"
-tensorflow-aarch64 = "*"
+tensorflow = "==2.13.1"
 scikit-learn = "*"
 
 [requires]

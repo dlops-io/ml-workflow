@@ -1,40 +1,32 @@
-# Use the official Debian-hosted Python image
-FROM python:3.9-slim-buster
+# Use the official Ubuntu image as the base
+FROM ubuntu:20.04
 
-ARG DEBIAN_PACKAGES="build-essential git curl wget unzip gzip"
-
-# Prevent apt from showing prompts
+# Set the environment variable for non-interactive installations
 ENV DEBIAN_FRONTEND=noninteractive
-
-# Python wants UTF-8 locale
 ENV LANG=C.UTF-8
-
-# Tell pipenv where the shell is. This allows us to use "pipenv shell" as a
-# container entry point.
 ENV PYENV_SHELL=/bin/bash
-
-# Tell Python to disable buffering so we don't lose any logs.
 ENV PYTHONUNBUFFERED=1
 
-# Ensure we have an up to date baseline, install dependencies and
-# create a user so we don't run the app as root
-RUN set -ex; \
-    for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done && \
-    apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends $DEBIAN_PACKAGES && \
-    apt-get install -y --no-install-recommends software-properties-common apt-transport-https ca-certificates gnupg2 gnupg-agent curl openssh-client && \
-    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
-    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - && \
-    echo "deb http://packages.cloud.google.com/apt gcsfuse-bionic main" > /etc/apt/sources.list.d/gcsfuse.list && \ 
-    apt-get update && \
-    apt-get install -y --no-install-recommends google-cloud-sdk && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    pip install --no-cache-dir --upgrade pip && \
-    pip install pipenv  && \
-    useradd -ms /bin/bash app -d /home/app -u 1000 -p "$(openssl passwd -1 Passw0rd)" && \
+# Install required dependencies
+RUN apt-get update && \
+    apt-get install -y curl apt-transport-https ca-certificates gnupg lsb-release openssh-client
+
+# Add the Google Cloud SDK repository
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
+    tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+
+# Install packages
+RUN apt-get update && \
+    apt-get install -y google-cloud-sdk google-cloud-sdk-gke-gcloud-auth-plugin jq
+
+# Python
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3.9 python3-pip && \
+    pip install pipenv
+
+RUN useradd -ms /bin/bash app -d /home/app -u 1000 -p "$(openssl passwd -1 Passw0rd)" && \
     mkdir -p /app && \
     mkdir -p /persistent && \
     chown app:app /persistent && \
@@ -54,6 +46,4 @@ RUN pipenv sync
 ADD --chown=app:app . /app
 
 # Entry point
-#ENTRYPOINT ["/bin/bash"]
-#ENTRYPOINT [ "pipenv","shell"]
 ENTRYPOINT ["/bin/bash","./docker-entrypoint.sh"]
