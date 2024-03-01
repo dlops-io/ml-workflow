@@ -215,7 +215,12 @@ def main(args=None):
         @dsl.pipeline
         def ml_pipeline():
             # Data Collector
-            data_collector_task = data_collector().set_display_name("Data Collector")
+            data_collector_task = (
+                data_collector()
+                .set_display_name("Data Collector")
+                .set_cpu_limit("500m")
+                .set_memory_limit("2G")
+            )
             # Data Processor
             data_processor_task = (
                 data_processor()
