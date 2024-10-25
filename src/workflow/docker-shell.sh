@@ -2,14 +2,14 @@
 
 # set -e
 
-export IMAGE_NAME="mushroom-app-workflow"
+export IMAGE_NAME="cheese-app-workflow"
 export BASE_DIR=$(pwd)
 export SECRETS_DIR=$(pwd)/../../../secrets/
 export GCP_PROJECT="ac215-project"
-export GCS_BUCKET_NAME="mushroom-app-ml-workflow-demo"
+export GCS_BUCKET_NAME="cheese-app-ml-workflow-demo"
 export GCS_SERVICE_ACCOUNT="ml-workflow@ac215-project.iam.gserviceaccount.com"
 export GCP_REGION="us-central1"
-export GCS_PACKAGE_URI="gs://mushroom-app-trainer-code"
+export GCS_PACKAGE_URI="gs://cheese-app-trainer-code"
 
 # Build the image based on the Dockerfile
 #docker build -t $IMAGE_NAME -f Dockerfile .

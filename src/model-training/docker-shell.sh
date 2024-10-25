@@ -2,14 +2,14 @@
 
 set -e
 
-export IMAGE_NAME=mushroom-app-training-cli
+export IMAGE_NAME=cheese-app-training-cli
 export BASE_DIR=$(pwd)
 export PERSISTENT_DIR=$(pwd)/../../../persistent-folder/
 export SECRETS_DIR=$(pwd)/../../../secrets/
 export GCP_PROJECT="ac215-project"
-export GCS_BUCKET_NAME="mushroom-app-ml-workflow-demo"
+export GCS_BUCKET_NAME="cheese-app-ml-workflow-demo"
 export GCP_REGION="us-central1"
-export GCS_PACKAGE_URI="gs://mushroom-app-trainer-code"
+export GCS_PACKAGE_URI="gs://cheese-app-trainer-code"
 
 
 # Build the image based on the Dockerfile

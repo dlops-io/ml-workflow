@@ -32,11 +32,11 @@ def main(args=None):
         )
 
         job_id = generate_uuid()
-        DISPLAY_NAME = "mushroom_" + job_id
+        DISPLAY_NAME = "cheese_" + job_id
 
         # container_uri = "us-docker.pkg.dev/vertex-ai/training/tf-gpu.2-12.py310:latest"
         container_uri = "us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-12.py310:latest"
-        python_package_gcs_uri = f"{GCS_PACKAGE_URI}/mushroom-app-trainer.tar.gz"
+        python_package_gcs_uri = f"{GCS_PACKAGE_URI}/cheese-app-trainer.tar.gz"
 
         job = aip.CustomPythonPackageTrainingJob(
             display_name=DISPLAY_NAME,
