@@ -9,13 +9,14 @@ import tensorflow as tf
 
 data_details = {
     "label_folders": {
-        "oyster mushrooms": 0,
-        "amanita mushrooms": 1,
-        "crimini mushrooms": 2,
+        "brie cheese": 2,
+        "gouda cheese": 3,
+        "gruyere cheese": 1,
+        "parmigiano cheese": 0,
     },
-    "labels": ["oyster", "amanita", "crimini"],
-    "label2index": {"oyster": 0, "amanita": 1, "crimini": 2},
-    "index2label": {0: "oyster", 1: "amanita", 2: "crimini"},
+    "labels": ["parmigiano", "gruyere", "brie", "gouda"],
+    "label2index": {"parmigiano": 0, "gruyere": 1, "brie": 2, "gouda": 3}, 
+    "index2label": {"0": "parmigiano", "1": "gruyere", "2": "brie", "3": "gouda"},
     "image_width": 224,
     "image_height": 224,
     "num_channels": 3,

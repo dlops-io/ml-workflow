@@ -123,17 +123,17 @@ $IMAGE_NAME
 * Go and check your GCS bucket to see if `raw.zip` was uploaded. 
 
 ### OPTIONAL: Run Data Processor Container & Test CLI
-#### Run `docker-shell.sh` or `docker-shell.bat`
-Based on your OS, run the startup script to make building & running the container easy
+#### Run `docker-shell.sh`
+The startup script is to make building & running the container easy
 
 This is what your `docker-shell` file will look like:
 ```
-export IMAGE_NAME="mushroom-app-data-processor"
+export IMAGE_NAME="cheese-app-data-processor"
 export BASE_DIR=$(pwd)
 export PERSISTENT_DIR=$(pwd)/../../../persistent-folder/
 export SECRETS_DIR=$(pwd)/../../../secrets/
 export GCP_PROJECT="ac215-project" [REPLACE WITH YOUR PROJECT]
-export GCS_BUCKET_NAME="mushroom-app-ml-workflow-demo" [REPLACE WITH YOUR BUCKET NAME]
+export GCS_BUCKET_NAME="cheese-app-ml-workflow-demo" [REPLACE WITH YOUR BUCKET NAME]
 
 # Build the image based on the Dockerfile
 #docker build -t $IMAGE_NAME -f Dockerfile .
@@ -152,7 +152,7 @@ $IMAGE_NAME
 ```
 
 - Make sure you are inside the `data-processor` folder and open a terminal at this location
-- Run `sh docker-shell.sh` or `docker-shell.bat` for windows
+- Run `sh docker-shell.sh`
 
 #### Test Data Processor
 
@@ -162,16 +162,16 @@ $IMAGE_NAME
 * Go and check your GCS bucket to see if `tfrecords.zip` was uploaded. 
 
 ### OPTIONAL: Run Model Training Container & Test CLI
-#### Run `docker-shell.sh` or `docker-shell.bat`
-Based on your OS, run the startup script to make building & running the container easy
+#### Run `docker-shell.sh`
+The startup script is to make building & running the container easy
 
 - Make sure you are inside the `model-training` folder and open a terminal at this location
-- Run `sh docker-shell.sh` or `docker-shell.bat` for windows
+- Run `sh docker-shell.sh`
 
 #### Test Model Training
 
 ##### Local Training
-* Run `python -m package.trainer.task --epochs=1 --batch_size=4 --bucket_name=mushroom-app-ml-workflow-demo`
+* Run `python -m package.trainer.task --epochs=1 --batch_size=4 --bucket_name=cheese-app-ml-workflow-demo`
 ##### Remote Training
 * Run `sh package-trainer.sh`, this will package the trainer code and upload into a bucket
 * Run `python cli.py --train`, this will invoke a Vertex AI training job
@@ -183,9 +183,9 @@ This step has already been done for this tutorial. For this tutorial in order to
 ### Pushing Docker Image to Docker Hub
 * Sign up in Docker Hub and create an [Access Token](https://hub.docker.com/settings/security)
 * Login to the Hub: `docker login -u <USER NAME> -p <ACCESS TOKEN>`
-* Build and Tag the Docker Image: `docker build -t <USER NAME>/mushroom-app-data-collector -f Dockerfile .`
-* If you are on M1/2 Macs: Build and Tag the Docker Image: `docker build -t <USER NAME>/mushroom-app-data-collector --platform=linux/amd64/v2 -f Dockerfile .`
-* Push to Docker Hub: `docker push <USER NAME>/mushroom-app-data-collector`
+* Build and Tag the Docker Image: `docker build -t <USER NAME>/cheese-app-data-collector -f Dockerfile .`
+* If you are on M1/2 Macs: Build and Tag the Docker Image: `docker build -t <USER NAME>/cheese-app-data-collector --platform=linux/amd64/v2 -f Dockerfile .`
+* Push to Docker Hub: `docker push <USER NAME>/cheese-app-data-collector`
 
 
 ## Automate Running Data Collector Container
@@ -197,11 +197,11 @@ Based on your OS, run the startup script to make building & running the containe
 
 This is what your `docker-shell` file will look like:
 ```
-export IMAGE_NAME="mushroom-app-workflow"
+export IMAGE_NAME="cheese-app-workflow"
 export BASE_DIR=$(pwd)
 export SECRETS_DIR=$(pwd)/../../../secrets/
 export GCP_PROJECT="ac215-project" [REPLACE WITH YOUR PROJECT]
-export GCS_BUCKET_NAME="mushroom-app-ml-workflow-demo" [REPLACE WITH YOUR BUCKET NAME]
+export GCS_BUCKET_NAME="cheese-app-ml-workflow-demo" [REPLACE WITH YOUR BUCKET NAME]
 export GCS_SERVICE_ACCOUNT="ml-workflow@ac215-project.iam.gserviceaccount.com" [REPLACE WITH YOUR SERVICE ACCOUNT]
 
 # Build the image based on the Dockerfile
@@ -233,23 +233,23 @@ In this step we will run the data collector container as a serverless task in Ve
 * Inspect `data_collector.yaml`
 * Go to [Vertex AI Pipeline](https://console.cloud.google.com/vertex-ai/pipelines) to inspect the status of the job
 
-## Mushroom App: Vertex AI Pipelines
+## Cheese App: Vertex AI Pipelines
 
-In this section we will use Vertex AI Pipelines to automate running oa all the tasks the mushroom app
+In this section we will use Vertex AI Pipelines to automate running oa all the tasks the cheese app
 
 ### In the folder `workflow` Run `docker-shell.sh` or `docker-shell.bat`
 Based on your OS, run the startup script to make building & running the container easy
 
 This is what your `docker-shell` file will look like:
 ```
-export IMAGE_NAME="mushroom-app-workflow"
+export IMAGE_NAME="cheese-app-workflow"
 export BASE_DIR=$(pwd)
 export SECRETS_DIR=$(pwd)/../../../secrets/
 export GCP_PROJECT="ac215-project" [REPLACE WITH YOUR PROJECT]
-export GCS_BUCKET_NAME="mushroom-app-ml-workflow-demo" [REPLACE WITH YOUR BUCKET NAME]
+export GCS_BUCKET_NAME="cheese-app-ml-workflow-demo" [REPLACE WITH YOUR BUCKET NAME]
 export GCS_SERVICE_ACCOUNT="ml-workflow@ac215-project.iam.gserviceaccount.com"
 export GCP_REGION="us-central1" [REPLACE WITH YOUR SERVICE ACCOUNT]
-export GCS_PACKAGE_URI="gs://mushroom-app-trainer-code" [REPLACE WITH YOUR BUCKET NAME]
+export GCS_PACKAGE_URI="gs://cheese-app-trainer-code" [REPLACE WITH YOUR BUCKET NAME]
 
 # Build the image based on the Dockerfile
 #docker build -t $IMAGE_NAME -f Dockerfile .
