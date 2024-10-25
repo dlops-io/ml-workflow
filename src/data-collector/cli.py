@@ -2,7 +2,7 @@
 Module that contains the command line app.
 
 Typical usage example from command line:
-        python cli.py --search --nums 10 --query "oyster mushrooms" "crimini mushrooms" "amanita mushrooms"
+        python cli.py --search --nums 10 --query "brie cheese" "gouda cheese" "gruyere cheese" "parmigiano cheese"
 """
 
 import os
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         "--query",
         type=str,
         nargs="+",
-        default="oyster mushrooms",
+        default="brie cheese",
         help="the search query term(s) since there can be multiple",
     )
     parser.add_argument(

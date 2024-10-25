@@ -1,6 +1,6 @@
-# Mushroom App: ML Workflow Management
+# Cheese App: ML Workflow Management
 
-In this tutorial we will put all the components we built for our Mushroom App together. We will then apply workflow management methods to test, execute, monitor, and automate these components:
+In this tutorial we will put all the components we built for our Cheese App together. We will then apply workflow management methods to test, execute, monitor, and automate these components:
 * Data Collector: Scraps image from the internet and stores them into a `raw` folder.
 * Data Processor: Checks images for duplicates, validate image formats, converts images to TF Records
 * Model Training: Submits training jobs to Vertex AI to train models
@@ -67,7 +67,7 @@ Your folder structure should look like this:
 We need a bucket to store files that we will be used by Vertext AI Pipelines during the ML workflow.
 
 - Go to `https://console.cloud.google.com/storage/browser`
-- Create a bucket `mushroom-app-ml-workflow-demo` [REPLACE WITH YOUR BUCKET NAME]
+- Create a bucket `cheese-app-ml-workflow-demo` [REPLACE WITH YOUR BUCKET NAME]
 
 ## Data Collector Container
 
@@ -78,24 +78,25 @@ The data collector container does the following:
 * If you run `cli.py` with the appropriate arguments your output folder should look like:
 ```
 |-raw
-   |---amanita mushrooms
-   |---crimini mushrooms
-   |---oyster mushrooms
+   |---brie cheese
+   |---gouda cheese
+   |---gruyere cheese
+   |---parmigiano cheese
 
 ```
 
 ### Run Data Collector Container & Test CLI
-#### Run `docker-shell.sh` or `docker-shell.bat`
-Based on your OS, run the startup script to make building & running the container easy
+#### Run `docker-shell.sh`
+The startup script is to make building & running the container easy
 
 This is what your `docker-shell` file will look like:
 ```
-export IMAGE_NAME="mushroom-app-data-collector"
+export IMAGE_NAME="cheese-app-data-collector"
 export BASE_DIR=$(pwd)
 export PERSISTENT_DIR=$(pwd)/../../../persistent-folder/
 export SECRETS_DIR=$(pwd)/../../../secrets/
 export GCP_PROJECT="ac215-project" [REPLACE WITH YOUR PROJECT]
-export GCS_BUCKET_NAME="mushroom-app-ml-workflow-demo" [REPLACE WITH YOUR BUCKET NAME]
+export GCS_BUCKET_NAME="cheese-app-ml-workflow-demo" [REPLACE WITH YOUR BUCKET NAME]
 
 # Build the image based on the Dockerfile
 #docker build -t $IMAGE_NAME -f Dockerfile .
@@ -114,11 +115,11 @@ $IMAGE_NAME
 ```
 
 - Make sure you are inside the `data-collector` folder and open a terminal at this location
-- Run `sh docker-shell.sh` or `docker-shell.bat` for windows
+- Run `sh docker-shell.sh`
 
 #### Test Data Collector
 
-* Run `python cli.py --search --nums 10 --query "oyster mushrooms" "crimini mushrooms" "amanita mushrooms"`
+* Run `python cli.py --search --nums 10 --query "brie cheese" "gouda cheese" "gruyere cheese" "parmigiano cheese"`
 * Go and check your GCS bucket to see if `raw.zip` was uploaded. 
 
 ### OPTIONAL: Run Data Processor Container & Test CLI
