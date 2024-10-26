@@ -187,13 +187,22 @@ This step has already been done for this tutorial. For this tutorial in order to
 * If you are on M1/2 Macs: Build and Tag the Docker Image: `docker build -t <USER NAME>/cheese-app-data-collector --platform=linux/amd64/v2 -f Dockerfile .`
 * Push to Docker Hub: `docker push <USER NAME>/cheese-app-data-collector`
 
+<!-- 
+
+docker tag cheese-app-data-collector dlops/cheese-app-data-collector
+docker push dlops/cheese-app-data-collector
+
+docker tag cheese-app-data-processor dlops/cheese-app-data-processor
+docker push dlops/cheese-app-data-processor
+
+-->
 
 ## Automate Running Data Collector Container
 
 In this section we will use Vertex AI Pipelines to automate running the task in our data collector container
 
-### In the folder `workflow` Run `docker-shell.sh` or `docker-shell.bat`
-Based on your OS, run the startup script to make building & running the container easy
+### In the folder `workflow` Run `docker-shell.sh`
+The startup script is to make building & running the container easy
 
 This is what your `docker-shell` file will look like:
 ```
@@ -224,7 +233,7 @@ $IMAGE_NAME
 ```
 
 - Make sure you are inside the `workflow` folder and open a terminal at this location
-- Run `sh docker-shell.sh` or `docker-shell.bat` for windows
+- Run `sh docker-shell.sh`
 
 ### Run Data Collector in Vertex AI
 In this step we will run the data collector container as a serverless task in Vertex AI Pipelines.
@@ -234,46 +243,7 @@ In this step we will run the data collector container as a serverless task in Ve
 * Go to [Vertex AI Pipeline](https://console.cloud.google.com/vertex-ai/pipelines) to inspect the status of the job
 
 ## Cheese App: Vertex AI Pipelines
-
-In this section we will use Vertex AI Pipelines to automate running oa all the tasks the cheese app
-
-### In the folder `workflow` Run `docker-shell.sh` or `docker-shell.bat`
-Based on your OS, run the startup script to make building & running the container easy
-
-This is what your `docker-shell` file will look like:
-```
-export IMAGE_NAME="cheese-app-workflow"
-export BASE_DIR=$(pwd)
-export SECRETS_DIR=$(pwd)/../../../secrets/
-export GCP_PROJECT="ac215-project" [REPLACE WITH YOUR PROJECT]
-export GCS_BUCKET_NAME="cheese-app-ml-workflow-demo" [REPLACE WITH YOUR BUCKET NAME]
-export GCS_SERVICE_ACCOUNT="ml-workflow@ac215-project.iam.gserviceaccount.com"
-export GCP_REGION="us-central1" [REPLACE WITH YOUR SERVICE ACCOUNT]
-export GCS_PACKAGE_URI="gs://cheese-app-trainer-code" [REPLACE WITH YOUR BUCKET NAME]
-
-# Build the image based on the Dockerfile
-#docker build -t $IMAGE_NAME -f Dockerfile .
-docker build -t $IMAGE_NAME --platform=linux/amd64 -f Dockerfile .
-
-
-# Run Container
-docker run --rm --name $IMAGE_NAME -ti \
--v /var/run/docker.sock:/var/run/docker.sock \
--v "$BASE_DIR":/app \
--v "$SECRETS_DIR":/secrets \
--v "$BASE_DIR/../data-collector":/data-collector \
--v "$BASE_DIR/../data-processor":/data-processor \
--e GOOGLE_APPLICATION_CREDENTIALS=/secrets/ml-workflow.json \
--e GCP_PROJECT=$GCP_PROJECT \
--e GCS_BUCKET_NAME=$GCS_BUCKET_NAME \
--e GCS_SERVICE_ACCOUNT=$GCS_SERVICE_ACCOUNT \
--e GCP_REGION=$GCP_REGION \
--e GCS_PACKAGE_URI=$GCS_PACKAGE_URI \
-$IMAGE_NAME
-```
-
-- Make sure you are inside the `workflow` folder and open a terminal at this location
-- Run `sh docker-shell.sh` or `docker-shell.bat` for windows
+In this section we will use Vertex AI Pipelines to automate running of all the tasks in the cheese app
 
 ### Run Workflow Pipeline in Vertex AI
 In this step we will run the workflow as serverless tasks in Vertex AI Pipelines.
@@ -302,13 +272,12 @@ You should be able to see the status of the pipeline in Vertex AI similar to thi
 
 In this section we will simple pipelines and run it on Vertex AI
 
-### In the folder `workflow` Run `docker-shell.sh` or `docker-shell.bat`
+### In the folder `workflow` Run `docker-shell.sh`
 - Make sure you are inside the `workflow` folder and open a terminal at this location
-- Run `sh docker-shell.sh` or `docker-shell.bat` for windows
-
+- Run `sh docker-shell.sh`
 
 #### Run Simple Pipelines
 
-* Sample Pipeline 1: Run `python cli.py --simple1`
+* Sample Pipeline 1: Run `python cli.py --sample`
 <img src="images/vertex-ai-simeple-pipeline-1.png"  width="500">
 <br>

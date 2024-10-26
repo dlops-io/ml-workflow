@@ -23,10 +23,10 @@ def model_training(
     aip.init(project=project, location=location, staging_bucket=staging_bucket)
 
     container_uri = "us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-12.py310:latest"
-    python_package_gcs_uri = f"{staging_bucket}/mushroom-app-trainer.tar.gz"
+    python_package_gcs_uri = f"{staging_bucket}/cheese-app-trainer.tar.gz"
 
     job = aip.CustomPythonPackageTrainingJob(
-        display_name="mushroom-app-training",
+        display_name="cheese-app-training",
         python_package_gcs_uri=python_package_gcs_uri,
         python_module_name="trainer.task",
         container_uri=container_uri,
@@ -80,7 +80,7 @@ def model_deploy(
         "us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-12:latest"
     )
 
-    display_name = "Mushroom App Model"
+    display_name = "Cheese App Model"
     ARTIFACT_URI = f"gs://{bucket_name}/model"
 
     # Upload and Deploy model to Vertex AI

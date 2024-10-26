@@ -11,9 +11,9 @@ deploymentSpec:
         - cli.py
         - --search
         - --nums 10
-        - --query oyster+mushrooms crimini+mushrooms amanita+mushrooms
-        - --bucket mushroom-app-ml-workflow-demo
-        image: dlops/mushroom-app-data-collector
+        - --query brie+cheese gouda+cheese gruyere+cheese parmigiano+cheese
+        - --bucket cheese-app-ml-workflow-demo
+        image: dlops/cheese-app-data-collector
 pipelineInfo:
   name: data-collector-pipeline
 root:

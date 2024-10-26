@@ -57,9 +57,9 @@ deploymentSpec:
         - cli.py
         - --search
         - --nums 50
-        - --query oyster+mushrooms crimini+mushrooms amanita+mushrooms
-        - --bucket mushroom-app-ml-workflow-demo
-        image: dlops/mushroom-app-data-collector
+        - --query brie+cheese gouda+cheese gruyere+cheese parmigiano+cheese
+        - --bucket cheese-app-ml-workflow-demo
+        image: dlops/cheese-app-data-collector
         resources:
           cpuLimit: 0.5
           memoryLimit: 2.0
@@ -69,8 +69,8 @@ deploymentSpec:
         - cli.py
         - --clean
         - --prepare
-        - --bucket mushroom-app-ml-workflow-demo
-        image: dlops/mushroom-app-data-processor
+        - --bucket cheese-app-ml-workflow-demo
+        image: dlops/cheese-app-data-processor
     exec-model-deploy:
       container:
         args:
@@ -102,9 +102,9 @@ deploymentSpec:
           Model Training Job\")\n\n    import google.cloud.aiplatform as aip\n\n \
           \   # List of prebuilt containers for prediction\n    # https://cloud.google.com/vertex-ai/docs/predictions/pre-built-containers\n\
           \    serving_container_image_uri = (\n        \"us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-12:latest\"\
-          \n    )\n\n    display_name = \"Mushroom App Model\"\n    ARTIFACT_URI =\
-          \ f\"gs://{bucket_name}/model\"\n\n    # Upload and Deploy model to Vertex\
-          \ AI\n    # Reference: https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform.Model#google_cloud_aiplatform_Model_upload\n\
+          \n    )\n\n    display_name = \"Cheese App Model\"\n    ARTIFACT_URI = f\"\
+          gs://{bucket_name}/model\"\n\n    # Upload and Deploy model to Vertex AI\n\
+          \    # Reference: https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform.Model#google_cloud_aiplatform_Model_upload\n\
           \    deployed_model = aip.Model.upload(\n        display_name=display_name,\n\
           \        artifact_uri=ARTIFACT_URI,\n        serving_container_image_uri=serving_container_image_uri,\n\
           \    )\n    print(\"deployed_model:\", deployed_model)\n    # Reference:\
@@ -148,9 +148,9 @@ deploymentSpec:
           \ Training Job\")\n\n    import google.cloud.aiplatform as aip\n\n    #\
           \ Initialize Vertex AI SDK for Python\n    aip.init(project=project, location=location,\
           \ staging_bucket=staging_bucket)\n\n    container_uri = \"us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-12.py310:latest\"\
-          \n    python_package_gcs_uri = f\"{staging_bucket}/mushroom-app-trainer.tar.gz\"\
+          \n    python_package_gcs_uri = f\"{staging_bucket}/cheese-app-trainer.tar.gz\"\
           \n\n    job = aip.CustomPythonPackageTrainingJob(\n        display_name=\"\
-          mushroom-app-training\",\n        python_package_gcs_uri=python_package_gcs_uri,\n\
+          cheese-app-training\",\n        python_package_gcs_uri=python_package_gcs_uri,\n\
           \        python_module_name=\"trainer.task\",\n        container_uri=container_uri,\n\
           \        project=project,\n    )\n\n    CMDARGS = [\n        f\"--epochs={epochs}\"\
           ,\n        f\"--batch_size={batch_size}\",\n        f\"--model_name={model_name}\"\
@@ -196,7 +196,7 @@ root:
           parameters:
             bucket_name:
               runtimeValue:
-                constant: mushroom-app-ml-workflow-demo
+                constant: cheese-app-ml-workflow-demo
         taskInfo:
           name: Model Deploy
       model-training:
@@ -213,7 +213,7 @@ root:
                 constant: 16.0
             bucket_name:
               runtimeValue:
-                constant: mushroom-app-ml-workflow-demo
+                constant: cheese-app-ml-workflow-demo
             epochs:
               runtimeValue:
                 constant: 15.0
@@ -228,7 +228,7 @@ root:
                 constant: ac215-project
             staging_bucket:
               runtimeValue:
-                constant: gs://mushroom-app-trainer-code
+                constant: gs://cheese-app-trainer-code
             train_base:
               runtimeValue:
                 constant: false
