@@ -7,23 +7,6 @@ In this tutorial we will put all the components we built for our Cheese App toge
 * Model Deploy: Updates trained models signature with preprocessing logic added to it. Upload model to Vertex AI Model Registry and Deploy model to Model Endpoints.
 <img src="images/ml-pipeline.png"  width="400">
 
-## Prerequisites
-* Have Docker installed
-* Cloned this repository to your local machine with a terminal up and running
-* Check that your Docker is running with the following command
-
-`docker run hello-world`
-
-### Install Docker 
-Install `Docker Desktop`
-
-#### Ensure Docker Memory
-- To make sure we can run multiple container go to Docker>Preferences>Resources and in "Memory" make sure you have selected > 4GB
-
-### Install VSCode  
-Follow the [instructions](https://code.visualstudio.com/download) for your operating system.  
-If you already have a preferred text editor, skip this step.  
-
 ## Setup Environments
 In this tutorial we will setup a container to manage packaging python code for training and creating jobs on Vertex AI (AI Platform) to run training tasks.
 
