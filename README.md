@@ -92,7 +92,7 @@ The startup script is to make building & running the container easy
 
 <hr> 
 
-###  Run Data Processor Container & Test CLI
+##  Run Data Processor Container & Test CLI
 #### Run `docker-shell.sh`
 The startup script is to make building & running the container easy
 
