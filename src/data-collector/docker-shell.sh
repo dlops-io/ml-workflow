@@ -21,7 +21,7 @@ docker run --rm --name $IMAGE_NAME -ti \
 -v "$BASE_DIR":/app \
 -v "$SECRETS_DIR":/secrets \
 -v "$PERSISTENT_DIR":/persistent \
--e GOOGLE_APPLICATION_CREDENTIALS=/secrets/data-service-account.json \
+-e GOOGLE_APPLICATION_CREDENTIALS=/secrets/ml-workflow.json \
 -e GCP_PROJECT=$GCP_PROJECT \
 -e GCS_BUCKET_NAME=$GCS_BUCKET_NAME \
 $IMAGE_NAME
