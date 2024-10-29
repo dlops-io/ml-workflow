@@ -1,10 +1,10 @@
 # Cheese App: ML Workflow Management
 
 In this tutorial we will put all the components we built for our Cheese App together. We will then apply workflow management methods to test, execute, monitor, and automate these components:
-* Data Collector: Scraps image from the internet and stores them into a `raw` folder.
-* Data Processor: Checks images for duplicates, validate image formats, converts images to TF Records
-* Model Training: Submits training jobs to Vertex AI to train models
-* Model Deploy: Updates trained models signature with preprocessing logic added to it. Upload model to Vertex AI Model Registry and Deploy model to Model Endpoints.
+* Data Collector: Gathers images from the internet and stores them into a `raw` folder.
+* Data Processor:  Removes duplicate images, validates formats, and converts images into TFRecord format.
+* Model Training: Submits training jobs to Vertex AI to train the models.
+* Model Deploy: Updates the model signature with preprocessing logic, then uploads the model to the Vertex AI Model Registry and deploys it to Model Endpoints.
 <img src="images/ml-pipeline.png"  width="400">
 
 ## Setup Environments
