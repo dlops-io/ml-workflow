@@ -153,33 +153,7 @@ In this section we will use Vertex AI Pipelines to automate running the task in 
 ### In the folder `workflow` Run `docker-shell.sh`
 The startup script is to make building & running the container easy
 
-This is what your `docker-shell` file will look like:
-```
-export IMAGE_NAME="cheese-app-workflow"
-export BASE_DIR=$(pwd)
-export SECRETS_DIR=$(pwd)/../../../secrets/
-export GCP_PROJECT="ac215-project" [REPLACE WITH YOUR PROJECT]
-export GCS_BUCKET_NAME="cheese-app-ml-workflow-demo" [REPLACE WITH YOUR BUCKET NAME]
-export GCS_SERVICE_ACCOUNT="ml-workflow@ac215-project.iam.gserviceaccount.com" [REPLACE WITH YOUR SERVICE ACCOUNT]
 
-# Build the image based on the Dockerfile
-#docker build -t $IMAGE_NAME -f Dockerfile .
-docker build -t $IMAGE_NAME --platform=linux/amd64 -f Dockerfile .
-
-
-# Run Container
-docker run --rm --name $IMAGE_NAME -ti \
--v /var/run/docker.sock:/var/run/docker.sock \
--v "$BASE_DIR":/app \
--v "$SECRETS_DIR":/secrets \
--v "$BASE_DIR/../data-collector":/data-collector \
--v "$BASE_DIR/../data-processor":/data-processor \
--e GOOGLE_APPLICATION_CREDENTIALS=/secrets/ml-workflow.json \
--e GCP_PROJECT=$GCP_PROJECT \
--e GCS_BUCKET_NAME=$GCS_BUCKET_NAME \
--e GCS_SERVICE_ACCOUNT=$GCS_SERVICE_ACCOUNT \
-$IMAGE_NAME
-```
 
 - Make sure you are inside the `workflow` folder and open a terminal at this location
 - Run `sh docker-shell.sh`
