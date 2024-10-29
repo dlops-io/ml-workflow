@@ -10,7 +10,6 @@ In this tutorial we will put all the components we built for our Cheese App toge
 ## Setup Environments
 In this tutorial we will setup a container to manage packaging python code for training and creating jobs on Vertex AI (AI Platform) to run training tasks.
 
-**In order to complete this tutorial you will need your GCP account setup and a WandB account setup.**
 
 ### Clone the github repository
 - Clone or download from [here](https://github.com/dlops-io/ml-workflow)
