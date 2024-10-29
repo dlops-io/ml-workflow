@@ -107,7 +107,11 @@ The startup script is to make building & running the container easy
 * Run `python cli.py --prepare`
 * Go and check your GCS bucket to see if `tfrecords.zip` was uploaded. 
 
-### OPTIONAL: Run Model Training Container & Test CLI
+<hr> 
+
+<hr> 
+
+## Run Model Training Container & Test CLI
 #### Run `docker-shell.sh`
 The startup script is to make building & running the container easy
 
