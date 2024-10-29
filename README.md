@@ -51,6 +51,11 @@ We need a bucket to store files that we will be used by Vertext AI Pipelines dur
 - Go to `https://console.cloud.google.com/storage/browser`
 - Create a bucket `cheese-app-ml-workflow-demo` [REPLACE WITH YOUR BUCKET NAME]
 
+<hr> 
+
+<hr> 
+
+
 ## Data Collector Container
 
 The data collector container does the following:
@@ -67,9 +72,6 @@ The data collector container does the following:
 
 ```
 
-<hr> 
-
-<hr> 
 
 ### Run Data Collector Container & Test CLI
 #### Run `docker-shell.sh`
