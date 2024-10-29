@@ -153,13 +153,12 @@ In this section we will use Vertex AI Pipelines to automate running the task in 
 ### In the folder `workflow` Run `docker-shell.sh`
 The startup script is to make building & running the container easy
 
-
-
 - Make sure you are inside the `workflow` folder and open a terminal at this location
 - Run `sh docker-shell.sh`
 
 ### Run Data Collector in Vertex AI
-In this step we will run the data collector container as a serverless task in Vertex AI Pipelines.
+In this step, we’ll run the data collector container as a serverless task within Vertex AI Pipelines. This demonstration will focus on the first part of the pipeline, and in the following steps, we’ll proceed to run the complete pipeline.
+
 
 * Run `python cli.py --data_collector`, this will package the data collector docker image as a Vertex AI Pipeline job and create a definition file called `data_collector.yaml`. This step also creates an `PipelineJob` to run on Vertex AI
 * Inspect `data_collector.yaml`
