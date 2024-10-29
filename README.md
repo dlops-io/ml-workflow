@@ -127,7 +127,11 @@ The startup script is to make building & running the container easy
 * Run `python cli.py --train`, this will invoke a Vertex AI training job
 
 
-## OPTIONAL: Build & Push Data Collector Image
+<hr> 
+
+<hr> 
+
+## Build & Push Data Collector Image
 This step has already been done for this tutorial. For this tutorial in order to make the docker images public we pushed them to docker hub. 
 
 ### Pushing Docker Image to Docker Hub
