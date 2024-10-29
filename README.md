@@ -81,7 +81,10 @@ The startup script is to make building & running the container easy
 * Run `python cli.py --search --nums 10 --query "brie cheese" "gouda cheese" "gruyere cheese" "parmigiano cheese"`
 * Go and check your GCS bucket to see if `raw.zip` was uploaded. 
 
-### OPTIONAL: Run Data Processor Container & Test CLI
+
+<hr> 
+
+###  Run Data Processor Container & Test CLI
 #### Run `docker-shell.sh`
 The startup script is to make building & running the container easy
 
