@@ -71,30 +71,7 @@ The data collector container does the following:
 #### Run `docker-shell.sh`
 The startup script is to make building & running the container easy
 
-This is what your `docker-shell` file will look like:
-```
-export IMAGE_NAME="cheese-app-data-collector"
-export BASE_DIR=$(pwd)
-export PERSISTENT_DIR=$(pwd)/../../../persistent-folder/
-export SECRETS_DIR=$(pwd)/../../../secrets/
-export GCP_PROJECT="ac215-project" [REPLACE WITH YOUR PROJECT]
-export GCS_BUCKET_NAME="cheese-app-ml-workflow-demo" [REPLACE WITH YOUR BUCKET NAME]
 
-# Build the image based on the Dockerfile
-#docker build -t $IMAGE_NAME -f Dockerfile .
-# M1/2 chip macs use this line
-docker build -t $IMAGE_NAME --platform=linux/arm64/v8 -f Dockerfile .
-
-# Run Container
-docker run --rm --name $IMAGE_NAME -ti \
--v "$BASE_DIR":/app \
--v "$SECRETS_DIR":/secrets \
--v "$PERSISTENT_DIR":/persistent \
--e GOOGLE_APPLICATION_CREDENTIALS=/secrets/data-service-account.json \
--e GCP_PROJECT=$GCP_PROJECT \
--e GCS_BUCKET_NAME=$GCS_BUCKET_NAME \
-$IMAGE_NAME
-```
 
 - Make sure you are inside the `data-collector` folder and open a terminal at this location
 - Run `sh docker-shell.sh`
