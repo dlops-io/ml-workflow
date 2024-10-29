@@ -131,25 +131,20 @@ The startup script is to make building & running the container easy
 
 <hr> 
 
-## Build & Push Data Collector Image
-This step has already been done for this tutorial. For this tutorial in order to make the docker images public we pushed them to docker hub. 
+## Build & Push Images
+This step has already been done for this tutorial. But for completeness here are the steps. 
 
 ### Pushing Docker Image to Docker Hub
 * Sign up in Docker Hub and create an [Access Token](https://hub.docker.com/settings/security)
 * Login to the Hub: `docker login -u <USER NAME> -p <ACCESS TOKEN>`
-* Build and Tag the Docker Image: `docker build -t <USER NAME>/cheese-app-data-collector -f Dockerfile .`
-* If you are on M1/2 Macs: Build and Tag the Docker Image: `docker build -t <USER NAME>/cheese-app-data-collector --platform=linux/amd64/v2 -f Dockerfile .`
-* Push to Docker Hub: `docker push <USER NAME>/cheese-app-data-collector`
+* Build and Tag the Docker Image: `docker build -t <USER NAME>/<IMAGE_NAME> -f Dockerfile .`
+* If you are on M1/2 Macs: Build and Tag the Docker Image: `docker build -t <USER NAME>/<IMAGE_NAME> --platform=linux/amd64/v2 -f Dockerfile .`
+* Push to Docker Hub: `docker push <USER NAME>/<IMAGE_NAME>`
 
-<!-- 
+<hr> 
 
-docker tag cheese-app-data-collector dlops/cheese-app-data-collector
-docker push dlops/cheese-app-data-collector
+<hr> 
 
-docker tag cheese-app-data-processor dlops/cheese-app-data-processor
-docker push dlops/cheese-app-data-processor
-
--->
 
 ## Automate Running Data Collector Container
 
