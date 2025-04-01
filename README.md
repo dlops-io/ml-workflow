@@ -19,7 +19,7 @@ Search for each of these in the GCP search bar and click enable to enable these 
 * Vertex AI API
 
 ### Setup GCP Credentials
-Next step is to enable our container to have access to Storage buckets & Vertex AI(AI Platform) in  GCP. 
+Next step is to enable our container to have access to Storage buckets & Vertex AI (AI Platform) in  GCP. 
 
 #### Create a local **secrets** folder
 
@@ -79,7 +79,7 @@ The startup script is to make building & running the container easy
 
 
 
-- Make sure you are inside the `data-collector` folder and open a terminal at this location
+- Make sure you are inside the `src/data-collector` folder and open a terminal at this location
 - Run `sh docker-shell.sh`
 
 #### Test Data Collector
@@ -97,7 +97,7 @@ The startup script is to make building & running the container easy
 The startup script is to make building & running the container easy
 
 
-- Make sure you are inside the `data-processor` folder and open a terminal at this location
+- Make sure you are inside the `src/data-processor` folder and open a terminal at this location
 - Run `sh docker-shell.sh`
 
 #### Test Data Processor
@@ -115,7 +115,7 @@ The startup script is to make building & running the container easy
 #### Run `docker-shell.sh`
 The startup script is to make building & running the container easy
 
-- Make sure you are inside the `model-training` folder and open a terminal at this location
+- Make sure you are inside the `src/model-training` folder and open a terminal at this location
 - Run `sh docker-shell.sh`
 
 #### Test Model Training
@@ -153,7 +153,7 @@ In this section we will use Vertex AI Pipelines to automate running the task in 
 ### In the folder `workflow` Run `docker-shell.sh`
 The startup script is to make building & running the container easy
 
-- Make sure you are inside the `workflow` folder and open a terminal at this location
+- Make sure you are inside the `src/workflow` folder and open a terminal at this location
 - Run `sh docker-shell.sh`
 
 ### Run Data Collector in Vertex AI
