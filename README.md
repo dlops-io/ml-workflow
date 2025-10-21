@@ -73,7 +73,7 @@ The data collector container does the following:
 ```
 
 
-## Run Data Collector Container & Test CLI  & Test CLI
+## Run Data Collector Container & Test CLI
 #### Run `docker-shell.sh`
 The startup script is to make building & running the container easy
 
