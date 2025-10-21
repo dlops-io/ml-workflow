@@ -58,7 +58,7 @@ print(tf.config.experimental.list_logical_devices("GPU"))
 print("GPU Available: ", tf.config.list_physical_devices("GPU"))
 print("All Physical Devices", tf.config.list_physical_devices())
 
-num_classes = 3
+num_classes = 4
 dataset_folder = os.path.join("/persistent", "dataset")
 tfrecords_folder = os.path.join(dataset_folder, "tfrecords")
 
