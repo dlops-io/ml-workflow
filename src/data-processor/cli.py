@@ -13,7 +13,8 @@ import uuid
 import pandas as pd
 import zipfile
 from google.cloud import storage
-import tfrecords
+
+# import tfrecords
 import cleanser
 
 
