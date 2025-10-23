@@ -26,7 +26,7 @@ components:
           isOptional: true
           parameterType: STRING
         epochs:
-          defaultValue: 15.0
+          defaultValue: 3.0
           isOptional: true
           parameterType: NUMBER_INTEGER
         location:
@@ -70,7 +70,6 @@ deploymentSpec:
         args:
         - cli.py
         - --clean
-        - --prepare
         - --bucket cheese-app-ml-workflow-demo
         image: dlops/cheese-app-data-processor
     exec-model-deploy:
@@ -145,11 +144,11 @@ deploymentSpec:
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
           \ *\n\ndef model_training(\n    project: str = \"\",\n    location: str\
           \ = \"\",\n    staging_bucket: str = \"\",\n    bucket_name: str = \"\"\
-          ,\n    epochs: int = 15,\n    batch_size: int = 16,\n    model_name: str\
+          ,\n    epochs: int = 3,\n    batch_size: int = 16,\n    model_name: str\
           \ = \"mobilenetv2\",\n    train_base: bool = False,\n):\n    print(\"Model\
           \ Training Job\")\n\n    import google.cloud.aiplatform as aip\n\n    #\
           \ Initialize Vertex AI SDK for Python\n    aip.init(project=project, location=location,\
-          \ staging_bucket=staging_bucket)\n\n    container_uri = \"us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-12.py310:latest\"\
+          \ staging_bucket=staging_bucket)\n\n    container_uri = \"us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-17.py310:latest\"\
           \n    python_package_gcs_uri = f\"{staging_bucket}/cheese-app-trainer.tar.gz\"\
           \n\n    job = aip.CustomPythonPackageTrainingJob(\n        display_name=\"\
           cheese-app-training\",\n        python_package_gcs_uri=python_package_gcs_uri,\n\
@@ -162,9 +161,9 @@ deploymentSpec:
           \n    TRAIN_NGPU = 1\n\n    print(python_package_gcs_uri)\n\n    # Run the\
           \ training job on Vertex AI\n    # sync=True, # If you want to wait for\
           \ the job to finish\n    job.run(\n        model_display_name=None,\n  \
-          \      args=CMDARGS,\n        replica_count=1,\n        machine_type=TRAIN_COMPUTE,\n\
+          \      args=CMDARGS,\n        # replica_count=1,\n        # machine_type=TRAIN_COMPUTE,\n\
           \        # accelerator_type=TRAIN_GPU,\n        # accelerator_count=TRAIN_NGPU,\n\
-          \        base_output_dir=MODEL_DIR,\n        sync=True,\n    )\n\n"
+          \        base_output_dir=MODEL_DIR,\n        sync=False,\n    )\n\n"
         image: python:3.10
 pipelineInfo:
   name: ml-pipeline

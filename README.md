@@ -109,7 +109,7 @@ The startup script is to make building & running the container easy
 
 <hr> 
 
-## Run Model Training Container & Test CLI
+## Run Model Training Container & Test CLI (We did this previous lecture)
 #### Run `docker-shell.sh`
 The startup script is to make building & running the container easy
 
@@ -118,8 +118,6 @@ The startup script is to make building & running the container easy
 
 #### Test Model Training
 
-##### Local Training
-* Run `python -m package.trainer.task --epochs=1 --batch_size=4 --bucket_name=cheese-app-ml-workflow-demo`
 ##### Remote Training
 * Run `sh package-trainer.sh`, this will package the trainer code and upload into a bucket
 * Run `python cli.py --train`, this will invoke a Vertex AI training job
