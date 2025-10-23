@@ -344,5 +344,43 @@ print("Training execution time (mins)", execution_time)
 # # Close the W&B run
 # # wandb.run.finish()
 
+print("Change model signature and save")
+
+
+# Preprocess Image
+def preprocess_image(bytes_input):
+    decoded = tf.io.decode_jpeg(bytes_input, channels=3)
+    decoded = tf.image.convert_image_dtype(decoded, tf.float32)
+    resized = tf.image.resize(decoded, size=(224, 224))
+    return resized
+
+
+@tf.function(input_signature=[tf.TensorSpec([None], tf.string)])
+def preprocess_function(bytes_inputs):
+    decoded_images = tf.map_fn(
+        preprocess_image, bytes_inputs, dtype=tf.float32, back_prop=False
+    )
+    return {"model_input": decoded_images}
+
+
+@tf.function(input_signature=[tf.TensorSpec([None], tf.string)])
+def serving_function(bytes_inputs):
+    images = preprocess_function(bytes_inputs)
+    results = model_call(**images)
+    return results
+
+
+model_call = tf.function(model.call).get_concrete_function(
+    [tf.TensorSpec(shape=[None, 224, 224, 3], dtype=tf.float32, name="model_input")]
+)
+ARTIFACT_URI = f"gs://{args.bucket_name}/model"
+
+# Save updated model to GCS
+tf.saved_model.save(
+    model,
+    ARTIFACT_URI,
+    signatures={"serving_default": serving_function},
+)
+
 
 print("Training Job Complete")
