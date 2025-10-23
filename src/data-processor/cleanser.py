@@ -28,7 +28,8 @@ def remove_duplicates(raw_folder, clean_folder):
         print("\nLower Quality Files:\n", search.lower_quality)
 
         # Delete duplicates
-        search.delete(silent_del=True)
+        if search.result:
+            search.delete(silent_del=True)
 
 
 def verify_images(clean_folder):

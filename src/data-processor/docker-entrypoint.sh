@@ -15,12 +15,10 @@ source /.venv/bin/activate
 
 if [[ -z ${args} ]]; 
 then
-    # Authenticate gcloud using service account
-    gcloud auth activate-service-account --key-file $GOOGLE_APPLICATION_CREDENTIALS
-    # Set GCP Project Details
-    gcloud config set project $GCP_PROJECT
     # Keep a shell open
     exec /bin/bash
 else
   uv run python $args
 fi
+
+

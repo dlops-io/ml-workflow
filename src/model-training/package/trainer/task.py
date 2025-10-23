@@ -18,8 +18,8 @@ from sklearn.model_selection import train_test_split
 
 
 # W&B
-import wandb
-from wandb.keras import WandbCallback, WandbMetricsLogger
+# import wandb
+# from wandb.keras import WandbCallback, WandbMetricsLogger
 
 
 # Setup the arguments for the trainer task
@@ -49,8 +49,15 @@ parser.add_argument(
     "--batch_size", dest="batch_size", default=16, type=int, help="Size of a batch."
 )
 parser.add_argument(
-    "--wandb_key", dest="wandb_key", default="16", type=str, help="WandB API Key"
+    "--bucket_name",
+    dest="bucket_name",
+    default="",
+    type=str,
+    help="Bucket for data and models.",
 )
+# parser.add_argument(
+#     "--wandb_key", dest="wandb_key", default="16", type=str, help="WandB API Key"
+# )
 args = parser.parse_args()
 
 # TF Version
@@ -149,11 +156,11 @@ print("train_x count:", len(train_x))
 print("validate_x count:", len(validate_x))
 print("test_x count:", len(test_x))
 
-# Login into wandb
-wandb.login(key=args.wandb_key)
+# # Login into wandb
+# # wandb.login(key=args.wandb_key)
 
 
-# Create TF Datasets
+# # Create TF Datasets
 def get_dataset(image_width=224, image_height=224, num_channels=3, batch_size=32):
     # Load Image
     def load_image(path, label):
@@ -309,17 +316,17 @@ print(model.summary())
 # Compile
 model.compile(loss=loss, optimizer=optimizer, metrics=["accuracy"])
 
-# Initialize a W&B run
-wandb.init(
-    project="cheese-training-vertex-ai",
-    config={
-        "learning_rate": learning_rate,
-        "epochs": epochs,
-        "batch_size": batch_size,
-        "model_name": model.name,
-    },
-    name=model.name,
-)
+# # Initialize a W&B run
+# # wandb.init(
+# #     project="cheese-training-vertex-ai",
+# #     config={
+# #         "learning_rate": learning_rate,
+# #         "epochs": epochs,
+# #         "batch_size": batch_size,
+# #         "model_name": model.name,
+# #     },
+# #     name=model.name,
+# # )
 
 # Train model
 start_time = time.time()
@@ -332,10 +339,10 @@ training_results = model.fit(
 execution_time = (time.time() - start_time) / 60.0
 print("Training execution time (mins)", execution_time)
 
-# Update W&B
-wandb.config.update({"execution_time": execution_time})
-# Close the W&B run
-wandb.run.finish()
+# # Update W&B
+# # wandb.config.update({"execution_time": execution_time})
+# # Close the W&B run
+# # wandb.run.finish()
 
 
 print("Training Job Complete")

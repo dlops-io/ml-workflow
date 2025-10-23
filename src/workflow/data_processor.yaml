@@ -10,7 +10,6 @@ deploymentSpec:
         args:
         - cli.py
         - --clean
-        - --prepare
         - --bucket cheese-app-ml-workflow-demo
         image: dlops/cheese-app-data-processor
 pipelineInfo:
@@ -26,4 +25,4 @@ root:
         taskInfo:
           name: data-processor
 schemaVersion: 2.1.0
-sdkVersion: kfp-2.3.0
+sdkVersion: kfp-2.14.6

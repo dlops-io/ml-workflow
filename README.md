@@ -104,8 +104,6 @@ The startup script is to make building & running the container easy
 
 * Run `python cli.py --clean`
 * Go and check your GCS bucket to see if `clean.zip` was uploaded. 
-* Run `python cli.py --prepare`
-* Go and check your GCS bucket to see if `tfrecords.zip` was uploaded. 
 
 <hr> 
 

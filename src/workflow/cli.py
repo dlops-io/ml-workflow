@@ -88,7 +88,6 @@ def data_processor():
             args=[
                 "cli.py",
                 "--clean",
-                "--prepare",
                 f"--bucket {GCS_BUCKET_NAME}",
             ],
         )
@@ -149,11 +148,12 @@ def model_training():
         enable_caching=False,
     )
 
-    job.run(service_account=GCS_SERVICE_ACCOUNT)
+    job.run(service_account=GCS_SERVICE_ACCOUNT, sync=False)
 
 
 def model_deploy():
     print("model_deploy()")
+
     # Define a Pipeline
     @dsl.pipeline
     def model_deploy_pipeline():
@@ -162,9 +162,7 @@ def model_deploy():
         )
 
     # Build yaml file for pipeline
-    compiler.Compiler().compile(
-        model_deploy_pipeline, package_path="model_deploy.yaml"
-    )
+    compiler.Compiler().compile(model_deploy_pipeline, package_path="model_deploy.yaml")
 
     # Submit job to Vertex AI
     aip.init(project=GCP_PROJECT, staging_bucket=BUCKET_URI)
@@ -183,6 +181,7 @@ def model_deploy():
 
 def pipeline():
     print("pipeline()")
+
     # Define a Container Component for data collector
     @dsl.container_component
     def data_collector():
@@ -208,7 +207,6 @@ def pipeline():
             args=[
                 "cli.py",
                 "--clean",
-                "--prepare",
                 f"--bucket {GCS_BUCKET_NAME}",
             ],
         )
@@ -274,6 +272,7 @@ def pipeline():
 
 def sample_pipeline():
     print("sample_pipeline()")
+
     # Define Component
     @dsl.component
     def square(x: float) -> float:
@@ -298,9 +297,7 @@ def sample_pipeline():
         return square_root(x=sum_task.output).output
 
     # Build yaml file for pipeline
-    compiler.Compiler().compile(
-        sample_pipeline, package_path="sample-pipeline1.yaml"
-    )
+    compiler.Compiler().compile(sample_pipeline, package_path="sample-pipeline1.yaml")
 
     # Submit job to Vertex AI
     aip.init(project=GCP_PROJECT, staging_bucket=BUCKET_URI)
@@ -341,6 +338,7 @@ def main(args=None):
     if args.sample:
         print("Sample Pipeline")
         sample_pipeline()
+
 
 if __name__ == "__main__":
     # Generate the inputs arguments parser

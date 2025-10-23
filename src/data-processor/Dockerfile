@@ -1,40 +1,38 @@
-# Use the official Ubuntu image as the base
-FROM ubuntu:22.04
+# Use the official Debian-hosted Python image
+FROM python:3.12-slim-bookworm
 
-# Set the environment variable for non-interactive installations
+ARG DEBIAN_PACKAGES="build-essential git curl wget unzip gzip"
+# libpq-dev
+
+# Prevent apt from showing prompts
 ENV DEBIAN_FRONTEND=noninteractive
+
+# Python wants UTF-8 locale
 ENV LANG=C.UTF-8
-ENV PYENV_SHELL=/bin/bash
+
+# Tell Python to disable buffering so we don't lose any logs.
 ENV PYTHONUNBUFFERED=1
 
 # Tell uv to copy packages from the wheel into the site-packages
 ENV UV_LINK_MODE=copy
 ENV UV_PROJECT_ENVIRONMENT=/.venv
 
-# Install required dependencies
-RUN apt-get update && \
-    apt-get install -y curl apt-transport-https ca-certificates gnupg lsb-release openssh-client
-
-# Add the Google Cloud SDK repository
-RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
-    tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-    gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
-
-# Install packages
-RUN apt-get update && \
-    apt-get install -y google-cloud-sdk google-cloud-sdk-gke-gcloud-auth-plugin jq
-
-# Python
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3.10 python3-pip python-is-python3 && \
-    pip install uv
-
-RUN useradd -ms /bin/bash app -d /home/app -u 1000 -p "$(openssl passwd -1 Passw0rd)" && \
+# Ensure we have an up to date baseline, install dependencies and
+# create a user so we don't run the app as root
+RUN set -ex; \
+    for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done && \
+    apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends $DEBIAN_PACKAGES && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install --no-cache-dir --upgrade pip && \
+    pip install uv && \
+    useradd -ms /bin/bash app -d /home/app -u 1000 && \
     mkdir -p /app && \
+    chown app:app /app && \
     mkdir -p /persistent && \
     chown app:app /persistent && \
-    chown app:app /app && \
     mkdir -p /.venv && \
     chown app:app /.venv
 
@@ -52,4 +50,4 @@ RUN uv sync --frozen
 COPY --chown=app:app . ./
 
 # Entry point
-ENTRYPOINT ["/bin/bash","./docker-entrypoint.sh"]
+ENTRYPOINT ["/bin/bash","docker-entrypoint.sh"]

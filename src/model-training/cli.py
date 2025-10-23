@@ -35,7 +35,7 @@ def main(args=None):
         DISPLAY_NAME = "cheese_" + job_id
 
         # container_uri = "us-docker.pkg.dev/vertex-ai/training/tf-gpu.2-12.py310:latest"
-        container_uri = "us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-12.py310:latest"
+        container_uri = "us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-14.py310:latest"
         python_package_gcs_uri = f"{GCS_PACKAGE_URI}/cheese-app-trainer.tar.gz"
 
         job = aip.CustomPythonPackageTrainingJob(
@@ -46,7 +46,7 @@ def main(args=None):
             project=GCP_PROJECT,
         )
 
-        CMDARGS = ["--epochs=15", "--batch_size=16", f"--bucket_name={GCS_BUCKET_NAME}"]
+        CMDARGS = ["--epochs=2", "--batch_size=16", f"--bucket_name={GCS_BUCKET_NAME}"]
         MODEL_DIR = GCS_PACKAGE_URI
         TRAIN_COMPUTE = "n1-standard-4"
         TRAIN_GPU = "NVIDIA_TESLA_T4"
@@ -71,7 +71,7 @@ def main(args=None):
 if __name__ == "__main__":
     # Generate the inputs arguments parser
     # if you type into the terminal 'python cli.py --help', it will provide the description
-    parser = argparse.ArgumentParser(description="Data Collector CLI")
+    parser = argparse.ArgumentParser(description="Model Trainer CLI")
 
     parser.add_argument(
         "-t",

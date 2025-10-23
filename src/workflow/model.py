@@ -10,7 +10,7 @@ def model_training(
     location: str = "",
     staging_bucket: str = "",
     bucket_name: str = "",
-    epochs: int = 15,
+    epochs: int = 3,
     batch_size: int = 16,
     model_name: str = "mobilenetv2",
     train_base: bool = False,
@@ -22,7 +22,7 @@ def model_training(
     # Initialize Vertex AI SDK for Python
     aip.init(project=project, location=location, staging_bucket=staging_bucket)
 
-    container_uri = "us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-12.py310:latest"
+    container_uri = "us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-17.py310:latest"
     python_package_gcs_uri = f"{staging_bucket}/cheese-app-trainer.tar.gz"
 
     job = aip.CustomPythonPackageTrainingJob(
@@ -54,12 +54,12 @@ def model_training(
     job.run(
         model_display_name=None,
         args=CMDARGS,
-        replica_count=1,
-        machine_type=TRAIN_COMPUTE,
+        # replica_count=1,
+        # machine_type=TRAIN_COMPUTE,
         # accelerator_type=TRAIN_GPU,
         # accelerator_count=TRAIN_NGPU,
         base_output_dir=MODEL_DIR,
-        sync=True,
+        sync=False,
     )
 
 

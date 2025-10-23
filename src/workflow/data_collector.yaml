@@ -27,4 +27,4 @@ root:
         taskInfo:
           name: data-collector
 schemaVersion: 2.1.0
-sdkVersion: kfp-2.3.0
+sdkVersion: kfp-2.14.6

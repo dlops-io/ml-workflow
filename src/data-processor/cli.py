@@ -14,8 +14,9 @@ import pandas as pd
 import zipfile
 from google.cloud import storage
 
-# import tfrecords
 import cleanser
+
+# import tfrecords
 
 
 dataset_folder = os.path.join("/persistent", "dataset")
@@ -72,6 +73,7 @@ def main(args=None):
         blob = bucket.blob("clean.zip")
         print("uploading file", zip_file)
         blob.upload_from_filename(zip_file)
+
     if args.prepare:
         print("Prepare dataset for training")
 

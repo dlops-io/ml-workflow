@@ -31,6 +31,8 @@ RUN set -ex; \
     useradd -ms /bin/bash app -d /home/app -u 1000 && \
     mkdir -p /app && \
     chown app:app /app && \
+    mkdir -p /persistent && \
+    chown app:app /persistent && \
     mkdir -p /.venv && \
     chown app:app /.venv
 
