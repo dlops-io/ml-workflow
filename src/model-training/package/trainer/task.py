@@ -1,7 +1,9 @@
 import argparse
 import os
-import time
+import requests
 import zipfile
+import tarfile
+import time
 
 # Tensorflow
 import tensorflow as tf
@@ -9,11 +11,22 @@ from tensorflow import keras
 from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.utils import to_categorical
 from tensorflow.python.keras import backend as K
+from tensorflow.python.keras.utils.layer_utils import count_params
 
-from google.cloud import storage
+# sklearn
+from sklearn.model_selection import train_test_split
+
+
+# W&B
+import wandb
+from wandb.keras import WandbCallback, WandbMetricsLogger
+
 
 # Setup the arguments for the trainer task
 parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--model-dir", dest="model_dir", default="test", type=str, help="Model dir."
+)
 parser.add_argument("--lr", dest="lr", default=0.001, type=float, help="Learning rate.")
 parser.add_argument(
     "--model_name",
@@ -36,11 +49,7 @@ parser.add_argument(
     "--batch_size", dest="batch_size", default=16, type=int, help="Size of a batch."
 )
 parser.add_argument(
-    "--bucket_name",
-    dest="bucket_name",
-    default="",
-    type=str,
-    help="Bucket for data and models.",
+    "--wandb_key", dest="wandb_key", default="16", type=str, help="WandB API Key"
 )
 args = parser.parse_args()
 
@@ -58,54 +67,99 @@ print(tf.config.experimental.list_logical_devices("GPU"))
 print("GPU Available: ", tf.config.list_physical_devices("GPU"))
 print("All Physical Devices", tf.config.list_physical_devices())
 
-num_classes = 4
-dataset_folder = os.path.join("/persistent", "dataset")
-tfrecords_folder = os.path.join(dataset_folder, "tfrecords")
 
-# Make dirs
-os.makedirs(dataset_folder, exist_ok=True)
+# Utils functions
+def download_file(packet_url, base_path="", extract=False, headers=None):
+    if base_path != "":
+        if not os.path.exists(base_path):
+            os.mkdir(base_path)
+    packet_file = os.path.basename(packet_url)
+    with requests.get(packet_url, stream=True, headers=headers) as r:
+        r.raise_for_status()
+        with open(os.path.join(base_path, packet_file), "wb") as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
 
-# Check if clean exists
-if not os.path.exists(tfrecords_folder):
-    # Download Data
-    start_time = time.time()
-    storage_client = storage.Client()
-    bucket = storage_client.get_bucket(args.bucket_name)
-    source_blob_name = "tfrecords.zip"
-    destination_file_name = os.path.join(dataset_folder, "tfrecords.zip")
-    blob = bucket.blob(source_blob_name)
-    blob.download_to_filename(destination_file_name)
-
-    # Unzip data
-    with zipfile.ZipFile(destination_file_name) as zfile:
-        zfile.extractall(dataset_folder)
-    execution_time = (time.time() - start_time) / 60.0
-    print("Download execution time (mins)", execution_time)
+    if extract:
+        if packet_file.endswith(".zip"):
+            with zipfile.ZipFile(os.path.join(base_path, packet_file)) as zfile:
+                zfile.extractall(base_path)
+        else:
+            packet_name = packet_file.split(".")[0]
+            with tarfile.open(os.path.join(base_path, packet_file)) as tfile:
+                tfile.extractall(base_path)
 
 
-# Create TF Datasets using TF records
-def get_dataset_tfrecord(
-    image_width=224, image_height=224, num_channels=3, batch_size=32
-):
-    # Read TF Records
-    feature_description = {
-        "image": tf.io.FixedLenFeature([], tf.string),
-        "label": tf.io.FixedLenFeature([], tf.int64),
-    }
+# Download Data
+print("Downloading data...")
+start_time = time.time()
+download_file(
+    "https://github.com/dlops-io/datasets/releases/download/v4.0/cheese_4_labels.zip",
+    base_path="datasets",
+    extract=True,
+)
+execution_time = (time.time() - start_time) / 60.0
+print("Download execution time (mins)", execution_time)
 
-    # @tf.function
-    def parse_tfrecord_example(example_proto):
-        parsed_example = tf.io.parse_single_example(example_proto, feature_description)
+# Load Data
+base_path = os.path.join("datasets", "cheese")
+label_names = os.listdir(base_path)
+print("Labels:", label_names)
 
-        # Image
-        # image = tf.image.decode_jpeg(parsed_example['image'])
-        image = tf.io.decode_raw(parsed_example["image"], tf.uint8)
-        image.set_shape([num_channels * image_height * image_width])
-        image = tf.reshape(image, [image_height, image_width, num_channels])
-        # Label
-        label = tf.cast(parsed_example["label"], tf.int32)
-        label = tf.one_hot(label, num_classes)
+# Number of unique labels
+num_classes = len(label_names)
+# Create label index for easy lookup
+label2index = dict((name, index) for index, name in enumerate(label_names))
+index2label = dict((index, name) for index, name in enumerate(label_names))
 
+# Generate a list of labels and path to images
+data_list = []
+for label in label_names:
+    # Images
+    image_files = os.listdir(os.path.join(base_path, label))
+    data_list.extend([(label, os.path.join(base_path, label, f)) for f in image_files])
+
+print("Full size of the dataset:", len(data_list))
+print("data_list:", data_list[:5])
+
+# Load X & Y
+# Build data x, y
+data_x = [itm[1] for itm in data_list]
+data_y = [itm[0] for itm in data_list]
+print("data_x:", len(data_x))
+print("data_y:", len(data_y))
+print("data_x:", data_x[:5])
+print("data_y:", data_y[:5])
+
+# Split Data
+test_percent = 0.10
+validation_percent = 0.2
+
+# Split data into train / test
+train_validate_x, test_x, train_validate_y, test_y = train_test_split(
+    data_x, data_y, test_size=test_percent
+)
+
+# Split data into train / validate
+train_x, validate_x, train_y, validate_y = train_test_split(
+    train_validate_x, train_validate_y, test_size=test_percent
+)
+
+print("train_x count:", len(train_x))
+print("validate_x count:", len(validate_x))
+print("test_x count:", len(test_x))
+
+# Login into wandb
+wandb.login(key=args.wandb_key)
+
+
+# Create TF Datasets
+def get_dataset(image_width=224, image_height=224, num_channels=3, batch_size=32):
+    # Load Image
+    def load_image(path, label):
+        image = tf.io.read_file(path)
+        image = tf.image.decode_jpeg(image, channels=num_channels)
+        image = tf.image.resize(image, [image_height, image_width])
         return image, label
 
     # Normalize pixels
@@ -113,35 +167,62 @@ def get_dataset_tfrecord(
         image = image / 255
         return image, label
 
-    # Read the tfrecord files
-    train_tfrecord_files = tf.data.Dataset.list_files(tfrecords_folder + "/train*")
-    validate_tfrecord_files = tf.data.Dataset.list_files(tfrecords_folder + "/val*")
+    train_shuffle_buffer_size = len(train_x)
+    validation_shuffle_buffer_size = len(validate_x)
+
+    # Convert all y labels to numbers
+    train_processed_y = [label2index[label] for label in train_y]
+    validate_processed_y = [label2index[label] for label in validate_y]
+    test_processed_y = [label2index[label] for label in test_y]
+
+    # Converts to y to binary class matrix (One-hot-encoded)
+    train_processed_y = to_categorical(train_processed_y, num_classes=num_classes)
+    validate_processed_y = to_categorical(validate_processed_y, num_classes=num_classes)
+    test_processed_y = to_categorical(test_processed_y, num_classes=num_classes)
+
+    # Create TF Dataset
+    train_data = tf.data.Dataset.from_tensor_slices((train_x, train_processed_y))
+    validation_data = tf.data.Dataset.from_tensor_slices(
+        (validate_x, validate_processed_y)
+    )
+    test_data = tf.data.Dataset.from_tensor_slices((test_x, test_processed_y))
 
     #############
     # Train data
     #############
-    train_data = train_tfrecord_files.flat_map(tf.data.TFRecordDataset)
-    train_data = train_data.map(
-        parse_tfrecord_example, num_parallel_calls=tf.data.AUTOTUNE
-    )
+    # Apply all data processing logic
+    train_data = train_data.shuffle(buffer_size=train_shuffle_buffer_size)
+    train_data = train_data.map(load_image, num_parallel_calls=tf.data.AUTOTUNE)
     train_data = train_data.map(normalize, num_parallel_calls=tf.data.AUTOTUNE)
     train_data = train_data.batch(batch_size)
-    train_data = train_data.prefetch(buffer_size=tf.data.AUTOTUNE)
+    train_data = train_data.prefetch(tf.data.AUTOTUNE)
 
     ##################
     # Validation data
     ##################
-    validation_data = validate_tfrecord_files.flat_map(tf.data.TFRecordDataset)
+    # Apply all data processing logic
+    validation_data = validation_data.shuffle(
+        buffer_size=validation_shuffle_buffer_size
+    )
     validation_data = validation_data.map(
-        parse_tfrecord_example, num_parallel_calls=tf.data.AUTOTUNE
+        load_image, num_parallel_calls=tf.data.AUTOTUNE
     )
     validation_data = validation_data.map(
         normalize, num_parallel_calls=tf.data.AUTOTUNE
     )
     validation_data = validation_data.batch(batch_size)
-    validation_data = validation_data.prefetch(buffer_size=tf.data.AUTOTUNE)
+    validation_data = validation_data.prefetch(tf.data.AUTOTUNE)
 
-    return train_data, validation_data
+    ############
+    # Test data
+    ############
+    # Apply all data processing logic
+    test_data = test_data.map(load_image, num_parallel_calls=tf.data.AUTOTUNE)
+    test_data = test_data.map(normalize, num_parallel_calls=tf.data.AUTOTUNE)
+    test_data = test_data.batch(batch_size)
+    test_data = test_data.prefetch(tf.data.AUTOTUNE)
+
+    return (train_data, validation_data, test_data)
 
 
 def build_mobilenet_model(
@@ -185,7 +266,7 @@ def build_mobilenet_model(
     return model
 
 
-print("Start Train model")
+print("Train model")
 ############################
 # Training Params
 ############################
@@ -202,32 +283,43 @@ train_base = args.train_base
 K.clear_session()
 
 # Data
-train_data, validation_data = get_dataset_tfrecord(
+train_data, validation_data, test_data = get_dataset(
     image_width=image_width,
     image_height=image_height,
     num_channels=num_channels,
     batch_size=batch_size,
 )
 
-if model_name == "mobilenetv2":
-    # Model
-    model = build_mobilenet_model(
-        image_height,
-        image_width,
-        num_channels,
-        num_classes,
-        model_name,
-        train_base=train_base,
-    )
-    # Optimizer
-    optimizer = keras.optimizers.SGD(learning_rate=learning_rate)
-    # Loss
-    loss = keras.losses.categorical_crossentropy
-    # Print the model architecture
-    print(model.summary())
-    # Compile
-    model.compile(loss=loss, optimizer=optimizer, metrics=["accuracy"])
 
+# Model
+model = build_mobilenet_model(
+    image_height,
+    image_width,
+    num_channels,
+    num_classes,
+    model_name,
+    train_base=train_base,
+)
+# Optimizer
+optimizer = keras.optimizers.SGD(learning_rate=learning_rate)
+# Loss
+loss = keras.losses.categorical_crossentropy
+# Print the model architecture
+print(model.summary())
+# Compile
+model.compile(loss=loss, optimizer=optimizer, metrics=["accuracy"])
+
+# Initialize a W&B run
+wandb.init(
+    project="cheese-training-vertex-ai",
+    config={
+        "learning_rate": learning_rate,
+        "epochs": epochs,
+        "batch_size": batch_size,
+        "model_name": model.name,
+    },
+    name=model.name,
+)
 
 # Train model
 start_time = time.time()
@@ -240,43 +332,10 @@ training_results = model.fit(
 execution_time = (time.time() - start_time) / 60.0
 print("Training execution time (mins)", execution_time)
 
-print("Change model signature and save")
-
-
-# Preprocess Image
-def preprocess_image(bytes_input):
-    decoded = tf.io.decode_jpeg(bytes_input, channels=3)
-    decoded = tf.image.convert_image_dtype(decoded, tf.float32)
-    resized = tf.image.resize(decoded, size=(224, 224))
-    return resized
-
-
-@tf.function(input_signature=[tf.TensorSpec([None], tf.string)])
-def preprocess_function(bytes_inputs):
-    decoded_images = tf.map_fn(
-        preprocess_image, bytes_inputs, dtype=tf.float32, back_prop=False
-    )
-    return {"model_input": decoded_images}
-
-
-@tf.function(input_signature=[tf.TensorSpec([None], tf.string)])
-def serving_function(bytes_inputs):
-    images = preprocess_function(bytes_inputs)
-    results = model_call(**images)
-    return results
-
-
-model_call = tf.function(model.call).get_concrete_function(
-    [tf.TensorSpec(shape=[None, 224, 224, 3], dtype=tf.float32, name="model_input")]
-)
-ARTIFACT_URI = f"gs://{args.bucket_name}/model"
-
-# Save updated model to GCS
-tf.saved_model.save(
-    model,
-    ARTIFACT_URI,
-    signatures={"serving_default": serving_function},
-)
+# Update W&B
+wandb.config.update({"execution_time": execution_time})
+# Close the W&B run
+wandb.run.finish()
 
 
 print("Training Job Complete")
