@@ -1,201 +1,296 @@
 # Cheese App: ML Workflow Management
 
-In this tutorial we will put all the components we built for our Cheese App together. We will then apply workflow management methods to test, execute, monitor, and automate these components:
-* Data Collector: Gathers images from the internet and stores them into a `raw` folder.
-* Data Processor:  Removes duplicate images, validates formats, and converts images into TFRecord format.
-* Model Training: Submits training jobs to Vertex AI to train the models.
-* Model Deploy: Updates the model signature with preprocessing logic, then uploads the model to the Vertex AI Model Registry and deploys it to Model Endpoints.
-<img src="images/ml-pipeline.png"  width="400">
+🌐 → 🧹 → 🏋️ → 🚀 &nbsp;&nbsp;(automated with ⛓️ Vertex AI Pipelines)
 
-## Setup Environments
-In this tutorial we will setup a container to manage packaging python code for training and creating jobs on Vertex AI (AI Platform) to run training tasks.
+The goal of this tutorial is to take the pieces of the Cheese App we have built separately (collecting images, cleaning them, training a model, deploying it) and **connect them into one automated ML pipeline** that runs in the cloud with a single command.
 
+So far we ran each step by hand: start a container, run a command, check the bucket, start the next container. That works once, but it is slow, easy to get wrong and hard to repeat. A **workflow manager** runs the steps for us, in the right order, on cloud machines, and records what happened in each run. Here we use **Vertex AI Pipelines** (built on Kubeflow Pipelines, `kfp`).
 
-### Clone the github repository
-- Clone or download from [here](https://github.com/dlops-io/ml-workflow)
+> **Note on names:** In 2026 Google renamed Vertex AI to **Gemini Enterprise Agent Platform**. The console now says "Agent Platform", but the API (`aiplatform.googleapis.com`), the Python SDKs (`google-cloud-aiplatform`, `kfp`), Pipelines, Training, Model Registry and Endpoints work exactly as before. In this tutorial, "Vertex AI" and "Agent Platform" mean the same thing.
 
-### API's to enable in GCP for Project
-Search for each of these in the GCP search bar and click enable to enable these API's
-* Vertex AI API
+Here is the story, step by step:
 
-### Setup GCP Credentials
-Next step is to enable our container to have access to Storage buckets & Vertex AI (AI Platform) in  GCP. 
+1. **Data Collector** downloads cheese images from Bing image search for each label (brie, gouda, gruyere, parmigiano), zips them and uploads `raw.zip` to our bucket.
+2. **Data Processor** downloads `raw.zip`, removes duplicate and invalid images, and uploads `clean.zip`.
+3. **Model Training** submits a training job to Vertex AI. The trained model, with a serving function attached, is saved to `gs://<bucket>/model`.
+4. **Model Deploy** uploads that model to the **Model Registry** and deploys it to an **Endpoint**.
+5. First we run each step **on its own**, inside its own container, to make sure it works.
+6. Then we **publish** the steps where Google can reach them: the data images go to Docker Hub, the training code to a bucket.
+7. Finally we let **Vertex AI Pipelines** run all four steps in order, on Google's machines, with one command.
 
-#### Create a local **secrets** folder
+<img src="images/ml-pipeline.png" width="400">
 
-It is important to note that we do not want any secure information in Git. So we will manage these files outside of the git folder. At the same level as the `ml-workflow` folder create a folder called **secrets**
+---
 
-Your folder structure should look like this:
+## Prerequisites
+
+Complete **[Tutorial 0 - Setup & Installs](https://github.com/dlops-io/ac215-setup)** first. It covers a GCP account and project, VS Code, Git, Docker Desktop and `uv`. This tutorial also builds on the **model training** and **model deployment** tutorials.
+
+> You will create **your own** service account and buckets in **your own** GCP project. Training jobs and endpoints run on machines billed to that project, so do the **Clean Up** step at the end.
+
+---
+
+## Clone this Repository
+
+```bash
+git clone https://github.com/dlops-io/ml-workflow.git
+cd ml-workflow
+```
+
+Each component lives in its own folder under `src/`, with its own container:
+
+```
+ml-workflow/src/
+├── data-collector/    # Step 1
+├── data-processor/    # Step 2
+├── model-training/    # Step 3 (training job + trainer package)
+└── workflow/          # Runs the pipeline; also defines the Model Deploy step (model.py)
+```
+
+---
+
+## What You'll Learn
+By completing this tutorial, you'll gain experience with:
+- **Breaking an ML system into components**, each in its own container.
+- **Pipelines as code**: describing steps and their order in Python with `kfp`, and compiling them to a pipeline definition (`.yaml`).
+- **Running pipelines on Vertex AI**: serverless execution, where Google provides the machines for each step.
+- **Monitoring runs** in the console: which step ran, how long it took, and where it failed.
+- **Container images for pipelines**: why each step's image has to be published to a registry that Vertex AI can pull from.
+
+---
+
+## Key Ideas Before You Start
+
+### Component, pipeline, run
+- A **component** is one step: a container image plus the command to run in it (for example the data collector image running `cli.py --search ...`).
+- A **pipeline** is a set of components and the order they run in (`.after(...)` in `workflow/cli.py`).
+- A **run** (a `PipelineJob`) is one execution of a pipeline. Each run shows up in the console with its own graph, logs and status.
+
+### How the steps talk to each other
+As in the mega-pipeline tutorial, the steps do not call each other. Each step reads its input from the **GCS bucket** and writes its output back there (`raw.zip` → `clean.zip` → `model/`). The pipeline only decides **when** each step starts.
+
+### Why the images must be in a registry
+On your laptop, `docker-shell.sh` builds an image locally. Vertex AI Pipelines runs on Google's machines, which cannot see your laptop, so the data collector and processor images are **published to Docker Hub** (`dlops/cheese-app-data-collector`, `dlops/cheese-app-data-processor`) and the pipeline pulls them from there. We have already published them for this tutorial; see **Build & Push Images** in the Appendix if you want to publish your own.
+
+### Two kinds of steps
+- **Container components** (data collector, data processor) run one of our images.
+  The same image works two ways, and `docker-entrypoint.sh` picks one: started by `docker-shell.sh` with **no arguments**, it opens a shell for you; started by the pipeline **with arguments** (for example `cli.py --search --nums 10 ...`, set in `src/workflow/cli.py`), it runs that command and exits.
+- **Python components** (model training, model deploy in `workflow/model.py`) are small Python functions that `kfp` runs in a standard Python image; they call the Vertex AI SDK to start a training job or deploy a model.
+
+---
+
+## GCP Setup
+
+### APIs to enable in GCP for your project
+Search for each of these in the GCP search bar and click **Enable**:
+* Agent Platform API (formerly "Vertex AI API"; service name `aiplatform.googleapis.com`)
+* Cloud Storage API (usually already enabled)
+
+Or from a terminal with gcloud: `gcloud services enable aiplatform.googleapis.com storage.googleapis.com`
+
+### Create local **secrets** and **persistent-folder** folders
+We do not want any secrets in Git, so we keep them **outside** the repository. At the same level as the `ml-workflow` folder, create two folders:
 ```
    |-ml-workflow
-      |-images
-        |-src
-        |---data-collector
-        |---data-processor
-        |---model-deploy
-        |---model-training
-        |---workflow
+   |-persistent-folder     # scratch space the containers can keep between runs
    |-secrets
 ```
 
-#### Setup GCP Service Account
-- Here are the step to create a service account:
-- To setup a service account you will need to go to [GCP Console](https://console.cloud.google.com/home/dashboard), search for  "Service accounts" from the top search box. or go to: "IAM & Admins" > "Service accounts" from the top-left menu and create a new service account called "ml-workflow". For "Service account permissions" select "Storage Admin", "AI Platform Admin", "Vertex AI Administrator", "Service Account User".
-- This will create a service account
-- On the right "Actions" column click the vertical ... and select "Manage keys". A prompt for Create private key for "ml-workflow" will appear select "JSON" and click create. This will download a Private key json file to your computer. Copy this json file into the **secrets** folder. Rename the json file to `ml-workflow.json`
+### Create a GCP service account
 
-### Create GCS Bucket
+| | |
+|---|---|
+| **Name** | `ml-workflow` |
+| **Key file** | `secrets/ml-workflow.json` |
 
-We need a bucket to store files that we will be used by Vertext AI Pipelines during the ML workflow.
+**Roles**
 
-- Go to `https://console.cloud.google.com/storage/browser`
-- Create a bucket `cheese-app-ml-workflow-demo` [REPLACE WITH YOUR BUCKET NAME]
+| Role | ID | Why |
+|---|---|---|
+| Storage Admin | `roles/storage.admin` | Read and write the bucket |
+| Vertex AI Administrator | `roles/aiplatform.admin` | Upload models, create endpoints, run jobs |
+| Service Account User | `roles/iam.serviceAccountUser` | Lets pipeline steps run as this account |
 
-<hr> 
+**Steps**
+1. Open **IAM & Admin > Service accounts** ([direct link](https://console.cloud.google.com/iam-admin/serviceaccounts)) and click **Create service account**.
+2. Enter the name `ml-workflow` and click **Create and continue**.
+3. Add each role from the table above, then click **Done**.
+4. Click the new account's ⋮ (Actions) > **Manage keys** > **Add key** > **Create new key** > **JSON** > **Create**. A key file downloads.
+5. Move the file into your **secrets** folder and rename it to `ml-workflow.json`.
 
-<hr> 
+> The console may list "Vertex AI Administrator" under the new Agent Platform name; search for `aiplatform.admin` if you cannot find it.
+>
+> If **Create new key** is greyed out or fails with a policy error, your organization blocks key creation (the default for new Google Cloud organizations). Use a personal project, or ask your organization admin to allow it.
 
+### Create two GCS buckets
+- Go to `https://console.cloud.google.com/storage/browser` and create, in region `us-central1`:
+  - a **data/model bucket**, for example `cheese-app-ml-workflow-<your-name>`: holds `raw.zip`, `clean.zip`, the trained `model/` and the pipeline's working files (`pipeline_root/`).
+  - a **trainer-code bucket**, for example `cheese-app-trainer-code-<your-name>`: holds the packaged training code and the training job outputs.
+- Bucket names are global, so make them unique.
 
-## Data Collector Container
-
-The data collector container does the following:
-* Downloads images from Bing based on the search terms provided
-* Organizes the label folders as the search terms
-* Zip the images and uploads to GCS Bucket
-* If you run `cli.py` with the appropriate arguments your output folder should look like:
+### Point the scripts at your project
+Every `docker-shell.sh` under `src/` sets the same few variables at the top. Edit them in **all four** files:
+```bash
+export GCP_PROJECT="<your-project-id>"
+export GCS_BUCKET_NAME="<your-data-bucket>"
+export GCS_PACKAGE_URI="gs://<your-trainer-code-bucket>"                          # model-training, workflow
+export GCS_SERVICE_ACCOUNT="ml-workflow@<your-project-id>.iam.gserviceaccount.com"  # workflow
 ```
-|-raw
-   |---brie cheese
-   |---gouda cheese
-   |---gruyere cheese
-   |---parmigiano cheese
 
+---
+
+## 🚀 Time to Build
+
+### Part 1: Run each component on its own
+
+Each component has its own container. For each one, `cd` into its folder and run `sh docker-shell.sh`; this builds the image and drops you into a shell inside it.
+
+#### 1. Data Collector
+```bash
+cd src/data-collector
+sh docker-shell.sh
+python cli.py --search --nums 10 --query "brie cheese" "gouda cheese" "gruyere cheese" "parmigiano cheese"
+```
+This downloads up to 10 images per label into folders named after each query:
+```
+raw/
+├── brie cheese/
+├── gouda cheese/
+├── gruyere cheese/
+└── parmigiano cheese/
+```
+and uploads them as `raw.zip` to your data bucket. Check the bucket to confirm.
+
+#### 2. Data Processor
+```bash
+cd src/data-processor
+sh docker-shell.sh
+python cli.py --clean
+```
+This downloads `raw.zip`, removes duplicates and invalid images, and uploads `clean.zip` to your bucket. (`python cli.py --prepare` additionally converts the clean images to TFRecords and uploads `tfrecords.zip`.)
+
+#### 3. Model Training (as in the model training tutorial)
+```bash
+cd src/model-training
+sh docker-shell.sh
+sh package-trainer.sh
+python cli.py --train
+```
+- `package-trainer.sh` packages the training code in `package/` as `cheese-app-trainer.tar.gz` and uploads it to your trainer-code bucket.
+- `python cli.py --train` starts a **custom training job** on Vertex AI that runs that package. Follow it under **Agent Platform > Training** in the console.
+- When it finishes, the trained model (with its serving function) is saved to `gs://<your-data-bucket>/model`.
+
+> To keep training reproducible, the trainer downloads a fixed, already-cleaned dataset from GitHub (`dlops-io/datasets`, `cheese_4_labels.zip`) rather than the `clean.zip` produced in step 2.
+
+### Part 2: Publish the components
+
+The pipeline runs on Google's machines, which cannot see anything on your laptop. Before it can run a step, that step's code must be somewhere Google can fetch it:
+
+| Pipeline step | What gets published | Where to | How |
+|---|---|---|---|
+| Data Collector | the container image | Docker Hub (`dlops/cheese-app-data-collector`) | `sh docker-build-push.sh` in `src/data-collector` |
+| Data Processor | the container image | Docker Hub (`dlops/cheese-app-data-processor`) | `sh docker-build-push.sh` in `src/data-processor` |
+| Model Training | the training code (`cheese-app-trainer.tar.gz`) | your trainer-code bucket | `sh package-trainer.sh`, already done in Part 1 |
+| Model Deploy | nothing | n/a | it is a small Python function inside `src/workflow` |
+
+- **You can skip the Docker Hub push.** The `dlops` images are already published, and the pipeline uses them by default. Push your own only if you change the data-collector or data-processor code; see [Build & Push Images](#build--push-images) in the Appendix.
+- **The pipeline only pulls, never builds.** If you change a component's code and do not push again, the pipeline keeps running the old version.
+- **The same image runs in both places.** Started by `docker-shell.sh` with no arguments, it opens a shell. Started by the pipeline with arguments (e.g. `cli.py --search ...`), it runs that command and exits. `docker-entrypoint.sh` decides which.
+
+### Part 3: Automate with Vertex AI Pipelines
+
+All pipeline commands run from the **workflow** container:
+```bash
+cd src/workflow
+sh docker-shell.sh
 ```
 
+#### Start small: one step as a pipeline
+```bash
+python cli.py --data_collector
+```
+This wraps the data collector image as a pipeline component, compiles it to `data_collector.yaml` and submits a `PipelineJob`. Open `data_collector.yaml` to see what was generated, then watch the run under **Agent Platform > Pipelines** ([direct link](https://console.cloud.google.com/vertex-ai/pipelines)).
 
-## Run Data Collector Container & Test CLI
-#### Run `docker-shell.sh`
-The startup script is to make building & running the container easy
+#### The whole pipeline
+```bash
+python cli.py --pipeline
+```
+This chains all four steps (Data Collector → Data Processor → Model Training → Model Deploy), compiles them to `pipeline.yaml` and submits one run. Each step starts only after the previous one succeeds. In the console you should see a graph like this:
 
-
-
-- Make sure you are inside the `src/data-collector` folder and open a terminal at this location
-- Run `sh docker-shell.sh`
-
-#### Test Data Collector
-
-* Run `python cli.py --search --nums 10 --query "brie cheese" "gouda cheese" "gruyere cheese" "parmigiano cheese"`
-* Go and check your GCS bucket to see if `raw.zip` was uploaded. 
-
-
-<hr> 
-
-<hr> 
-
-##  Run Data Processor Container & Test CLI
-#### Run `docker-shell.sh`
-The startup script is to make building & running the container easy
-
-
-- Make sure you are inside the `src/data-processor` folder and open a terminal at this location
-- Run `sh docker-shell.sh`
-
-#### Test Data Processor
-
-* Run `python cli.py --clean`
-* Go and check your GCS bucket to see if `clean.zip` was uploaded. 
-
-<hr> 
-
-<hr> 
-
-## Run Model Training Container & Test CLI (We did this previous lecture)
-#### Run `docker-shell.sh`
-The startup script is to make building & running the container easy
-
-- Make sure you are inside the `src/model-training` folder and open a terminal at this location
-- Run `sh docker-shell.sh`
-
-#### Test Model Training
-
-##### Remote Training
-* Run `sh package-trainer.sh`, this will package the trainer code and upload into a bucket
-* Run `python cli.py --train`, this will invoke a Vertex AI training job
-
-
-<hr> 
-
-<hr> 
-
-## Build & Push Images
-This step has already been done for this tutorial. But for completeness here are the steps. 
-
-### Pushing Docker Image to Docker Hub
-* Sign up in Docker Hub and create an [Access Token](https://hub.docker.com/settings/security)
-* Login to the Hub: `docker login -u <USER NAME> -p <ACCESS TOKEN>`
-* Build and Tag the Docker Image: `docker build -t <USER NAME>/<IMAGE_NAME> -f Dockerfile .`
-* If you are on M1/2 Macs: Build and Tag the Docker Image: `docker build -t <USER NAME>/<IMAGE_NAME> --platform=linux/amd64/v2 -f Dockerfile .`
-* Push to Docker Hub: `docker push <USER NAME>/<IMAGE_NAME>`
-
-<hr> 
-
-<hr> 
-
-
-## Automate Running Data Collector Container
-
-In this section we will use Vertex AI Pipelines to automate running the task in our data collector container
-
-### In the folder `workflow` Run `docker-shell.sh`
-The startup script is to make building & running the container easy
-
-- Make sure you are inside the `src/workflow` folder and open a terminal at this location
-- Run `sh docker-shell.sh`
-
-### Run Data Collector in Vertex AI
-In this step, we’ll run the data collector container as a serverless task within Vertex AI Pipelines. This demonstration will focus on the first part of the pipeline, and in the following steps, we’ll proceed to run the complete pipeline.
-
-
-* Run `python cli.py --data_collector`, this will package the data collector docker image as a Vertex AI Pipeline job and create a definition file called `data_collector.yaml`. This step also creates an `PipelineJob` to run on Vertex AI
-* Inspect `data_collector.yaml`
-* Go to [Vertex AI Pipeline](https://console.cloud.google.com/vertex-ai/pipelines) to inspect the status of the job
-
-## Cheese App: Vertex AI Pipelines
-In this section we will use Vertex AI Pipelines to automate running of all the tasks in the cheese app
-
-### Run Workflow Pipeline in Vertex AI
-In this step we will run the workflow as serverless tasks in Vertex AI Pipelines.
-
-#### Entire Pipeline
-* Run `python cli.py --pipeline`, this will orchestrate all the tasks for the workflow and create a definition file called `pipeline.yaml`.
-* Inspect `pipeline.yaml`
-* Go to [Vertex AI Pipeline](https://console.cloud.google.com/vertex-ai/pipelines) to inspect the status of the job
-
-You should be able to see the status of the pipeline in Vertex AI similar to this:
-
-<img src="images/vertex-ai-pipeline-1.png"  width="300">
+<img src="images/vertex-ai-pipeline-1.png" width="300">
 <br>
-<img src="images/vertex-ai-pipeline-2.png"  width="300">
+<img src="images/vertex-ai-pipeline-2.png" width="300">
 
+A full run takes a while: training alone is several minutes, and deploying an endpoint often takes 10–20 minutes.
 
-#### Test Specific Components
+#### Run one step of the pipeline at a time
+Useful when a step fails and you want to rerun just that one:
+```bash
+python cli.py --data_collector
+python cli.py --data_processor
+python cli.py --model_training
+python cli.py --model_deploy
+```
 
-* For Data Collector: Run `python cli.py --data_collector`
-* For Data Processor: Run `python cli.py --data_processor`
-* For Model Training: Run `python cli.py --model_training`
-* For Model Deploy: Run `python cli.py --model_deploy`
+#### A toy pipeline
+```bash
+python cli.py --sample
+```
+A small pipeline of Python components (square, add, square root) that shows how values pass from one step to the next, with no containers of our own.
 
+<img src="images/vertex-ai-simeple-pipeline-1.png" width="500">
 
-## Vertex AI Pipelines: Samples
+### Part 4: Clean up (important)
+The Model Deploy step creates an endpoint on an `n1-standard-4` machine that **bills your project every hour**, even when nobody calls it. When you are done:
 
-In this section we will simple pipelines and run it on Vertex AI
+**In the console**
+1. Go to **Agent Platform > Models > Endpoints**, or open [https://console.cloud.google.com/vertex-ai/online-prediction/endpoints](https://console.cloud.google.com/vertex-ai/online-prediction/endpoints).
+2. Click your endpoint's name. On the row for your model, click **Actions** (⋮) > **Undeploy model from endpoint**, then **Undeploy**.
+3. Back on the Endpoints list, select the endpoint, click **Actions** (⋮) > **Delete endpoint**.
 
-### In the folder `workflow` Run `docker-shell.sh`
-- Make sure you are inside the `workflow` folder and open a terminal at this location
-- Run `sh docker-shell.sh`
+**Or from the workflow container**
+```bash
+gcloud ai endpoints list --region=us-central1
+gcloud ai endpoints describe <ENDPOINT_ID> --region=us-central1      # deployedModels: id
+gcloud ai endpoints undeploy-model <ENDPOINT_ID> --region=us-central1 --deployed-model-id=<DEPLOYED_MODEL_ID>
+gcloud ai endpoints delete <ENDPOINT_ID> --region=us-central1
+```
+Pipeline runs, training jobs and registered models do not keep running, so they do not need cleaning up. Your model in the registry is at [https://console.cloud.google.com/vertex-ai/models](https://console.cloud.google.com/vertex-ai/models).
 
-#### Run Simple Pipelines
+---
 
-* Sample Pipeline 1: Run `python cli.py --sample`
-<img src="images/vertex-ai-simeple-pipeline-1.png"  width="500">
-<br>
+## Quick Reference
+
+| Where | Command | What it does |
+|---|---|---|
+| `src/data-collector` | `python cli.py --search --nums 10 --query "brie cheese" ...` | Download images, upload `raw.zip` |
+| `src/data-processor` | `python cli.py --clean` | Clean images, upload `clean.zip` |
+| `src/model-training` | `sh package-trainer.sh` then `python cli.py --train` | Package trainer code, start a training job |
+| `src/data-collector`, `src/data-processor` | `sh docker-build-push.sh` (optional) | Publish your own image to Docker Hub |
+| `src/workflow` | `python cli.py --pipeline` | Run the whole pipeline on Vertex AI |
+| `src/workflow` | `python cli.py --data_collector` (or `--data_processor`, `--model_training`, `--model_deploy`) | Run one step as a pipeline |
+| `src/workflow` | `python cli.py --sample` | Toy pipeline |
+
+Then **undeploy and delete the endpoint** when you are done.
+
+---
+
+## Appendix
+
+### Build & Push Images
+This has already been done for this tutorial: the pipeline uses `dlops/cheese-app-data-collector` and `dlops/cheese-app-data-processor` from Docker Hub. To publish your own versions:
+* Sign up on Docker Hub and create an [Access Token](https://hub.docker.com/settings/security).
+* Log in: `docker login -u <USER NAME>` and paste the token when asked for a password.
+* In `src/data-collector` (and `src/data-processor`), set `DOCKER_USERNAME` in `docker-build-push.sh` and run `sh docker-build-push.sh`. It builds the image for `linux/amd64` (what Vertex AI runs) and pushes it to Docker Hub. On Apple-silicon Macs the build is emulated, so it is slower than `docker-shell.sh`.
+* Update `DATA_COLLECTOR_IMAGE` and `DATA_PROCESSOR_IMAGE` at the top of `src/workflow/cli.py` to your image names.
+
+> The pipeline never builds or pushes images; it only pulls them from Docker Hub. If you change the code in `src/data-collector` or `src/data-processor`, the pipeline keeps running the old version until you run `sh docker-build-push.sh` again.
+
+### Notes for running on Windows
+* Run Docker commands from **Git BASH**.
+* **Always quote `$(pwd)`**: Windows paths often contain spaces.
+* If you see `the input device is not a TTY`, prefix the `docker run` command in `docker-shell.sh` with `winpty`.
+
+### Learn more
+- [Vertex AI Pipelines introduction](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)
+- [Kubeflow Pipelines (kfp) documentation](https://www.kubeflow.org/docs/components/pipelines/)

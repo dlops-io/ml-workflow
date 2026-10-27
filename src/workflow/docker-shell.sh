@@ -12,13 +12,12 @@ export GCP_REGION="us-central1"
 export GCS_PACKAGE_URI="gs://cheese-app-trainer-code"
 
 # Build the image based on the Dockerfile
-#docker build -t $IMAGE_NAME -f Dockerfile .
-docker build -t $IMAGE_NAME --platform=linux/amd64 -f Dockerfile .
+# Build the image for this machine's architecture (Apple silicon, Intel or AMD)
+docker build -t $IMAGE_NAME -f Dockerfile .
 
 
 # Run Container
 docker run --rm --name $IMAGE_NAME -ti \
--v /var/run/docker.sock:/var/run/docker.sock \
 -v "$BASE_DIR":/app \
 -v "$SECRETS_DIR":/secrets \
 -v "$BASE_DIR/../data-collector":/data-collector \

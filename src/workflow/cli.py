@@ -36,11 +36,15 @@ def data_collector():
     print("data_collector()")
 
     # Define a Container Component
+    # The step runs our data-collector image from Docker Hub.
+    # command=[] keeps the image's ENTRYPOINT (docker-entrypoint.sh), and args are
+    # passed to it, so inside the container this runs:
+    #   uv run python cli.py --search --nums 10 --query ... --bucket ...
     @dsl.container_component
     def data_collector():
         container_spec = dsl.ContainerSpec(
             image=DATA_COLLECTOR_IMAGE,
-            command=[],
+            command=[],  # empty = use the image's ENTRYPOINT
             args=[
                 "cli.py",
                 "--search",

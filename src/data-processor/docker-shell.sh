@@ -12,10 +12,8 @@ export GCP_PROJECT="ac215-project"
 export GCS_BUCKET_NAME="cheese-app-ml-workflow-demo"
 
 # Build the image based on the Dockerfile
+# Build the image for this machine's architecture (Apple silicon, Intel or AMD)
 docker build -t $IMAGE_NAME -f Dockerfile .
-# M1/2 chip macs use this line
-#docker build -t $IMAGE_NAME --platform=linux/arm64/v8 -f Dockerfile .
-#docker build -t $IMAGE_NAME --platform=linux/amd64 -f Dockerfile .
 
 # Run Container
 docker run --rm --name $IMAGE_NAME -ti \

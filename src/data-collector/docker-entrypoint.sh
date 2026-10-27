@@ -1,4 +1,10 @@
 #!/bin/bash
+# This image runs in two modes:
+#   1. Locally, via docker-shell.sh: no arguments are passed, so we open a shell
+#      and you run `python cli.py ...` yourself.
+#   2. As a step in a Vertex AI Pipeline: the pipeline passes the arguments
+#      (see ContainerSpec args in src/workflow/cli.py), e.g.
+#      "cli.py --search --nums 10 ...", and we run that command and exit.
 
 echo "Container is running!!!"
 echo "Architecture: $(uname -m)"
@@ -15,9 +21,10 @@ source /.venv/bin/activate
 
 if [[ -z ${args} ]]; 
 then
-    # Keep a shell open
+    # Mode 1 (local): no arguments, keep a shell open
     exec /bin/bash
 else
+  # Mode 2 (pipeline step): run the given cli.py command; the container exits when it finishes
   uv run python $args
 fi
 

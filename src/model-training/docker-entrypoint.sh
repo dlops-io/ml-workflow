@@ -1,4 +1,6 @@
 #!/bin/bash
+# This image is only used interactively (via docker-shell.sh), never as a pipeline
+# step, so it always opens a shell and ignores any arguments.
 
 echo "Container is running!!!"
 echo "Architecture: $(uname -m)"
