@@ -161,7 +161,7 @@ def model_deploy():
     # Define a Pipeline
     @dsl.pipeline
     def model_deploy_pipeline():
-        model_deploy(
+        model_deploy_job(
             bucket_name=GCS_BUCKET_NAME,
         )
 
