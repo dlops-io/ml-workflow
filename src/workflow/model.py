@@ -59,7 +59,7 @@ def model_training(
         # accelerator_type=TRAIN_GPU,
         # accelerator_count=TRAIN_NGPU,
         base_output_dir=MODEL_DIR,
-        sync=False,
+        sync=True,
     )
 
 
